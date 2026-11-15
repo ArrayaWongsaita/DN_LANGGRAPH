@@ -43,7 +43,7 @@
 | langgraph-cli dev: import แบบไม่ใส่นามสกุล | ✅ PASS | |
 | langgraph-cli dev: อ่าน `env` จาก config ในโฟลเดอร์อื่น | ✅ PASS | path ใน config นับจากโฟลเดอร์ของ config |
 | langgraph-cli dev: `main` ไม่ถูกรันตอน import | ✅ PASS | |
-| langgraph-cli dev: Studio | 🟡 PARTIAL | Studio ต่อได้โดยไม่มี key และไม่เปิด tracing · ส่วนที่มี LangSmith key → 6b |
+| langgraph-cli dev: Studio | 🟡 PARTIAL | ⚠️ **ขัดกับเอกสารออกแบบข้อ 3** ที่บอกว่า Studio ต้องมี LangSmith key: ในการทดลองนี้หน้า Studio โหลดและเห็น graph โดยไม่มี key (เงื่อนไขอยู่ในหัวข้อ Studio ข้างล่าง) · **ยังไม่ตัดสิน** ให้ใช้ข้อกำหนดเดิมของเอกสารออกแบบ (บท 046 ต้องมี key) จนกว่าจะทดสอบซ้ำด้วย key จริงในข้อ 6b-6 |
 | langgraph-cli dev: repo ที่ใช้ pnpm | ✅ PASS | ชื่อคำสั่งคือ `langgraphjs` ไม่ใช่ `langgraph` |
 | Next.js 16.4: re-export หน้า `"use client"` และ route handler | ✅ PASS | ค่า config ของ route (`dynamic`, `runtime`, `maxDuration`) re-export ไม่ได้ ต้องเขียนในไฟล์ `src/app/...` |
 | `useStream` ↔ langgraph dev server | ✅ PASS | |
@@ -57,10 +57,17 @@
 | แบ่ง chunk ภาษาไทย | ✅ PASS | ได้ค่าที่แนะนำ 2 แบบ (ข้างล่าง) |
 | Node 24: `--env-file-if-exists` + `--import tsx` | ✅ PASS | |
 | Gemini (`getModel` ไม่ส่ง temperature, `GoogleGenerativeAIEmbeddings`) | ⏸ DEFERRED → 6b | ต้องใช้ key จริง |
-| hosting บท 147 + Postgres บน cloud | ✅ PASS (ค้นเอกสาร) | Vercel Hobby (สูงสุด 300 วินาที) + Neon Free · ยังไม่ได้ deploy จริง |
+| hosting บท 147 + Postgres บน cloud | ✅ PASS (ค้นเอกสาร) | Vercel Hobby (สูงสุด 300 วินาที) + Neon Free พอตามเกณฑ์ข้อ 6 · ตัวเลือกอื่นยังประเมินไม่ครบ · ยังไม่ได้ deploy จริง · URL และวันที่ดึงหน้าอยู่ในหัวข้อ hosting ข้างล่าง |
 | Step 6 `internal/windows-checklist.md` | ✅ เขียนแล้ว | ผู้ใช้เป็นคนรันบน Windows |
 
-นับรวม 6a: PASS 16 (มีเงื่อนไข 4 ข้อ) · PARTIAL 2 · FAIL 0 · DEFERRED 2 (ไม่นับ Step 6 ที่เป็นงานเขียน)
+นับรวม 6a: PASS 16 · PARTIAL 2 · FAIL 0 · DEFERRED 2 (ไม่นับ Step 6 ที่เป็นงานเขียน)
+
+- **PASS ที่มีเงื่อนไข 4 ข้อ:**
+  1. `useStream` ↔ route handler: ผ่านเฉพาะในเครื่อง ยังไม่ได้ทดสอบบน serverless
+  2. Agent Chat UI บนเว็บ: ต้องอนุญาตการเข้าถึงเครือข่ายในเครื่องของ Chrome
+  3. `InMemoryCache` + `cachePolicy`: state ที่เป็น messages ต้องใช้ `keyFunc`
+  4. hosting: ตัดสินจากเอกสารเท่านั้น ยังไม่ได้ deploy
+- **ข้อที่ผลขึ้นกับโมเดล ทดสอบกับ `deepseek-v4.1-flash` ผ่าน opencode shim เท่านั้น ยังไม่ใช่ provider จริง:** usage hook (Step 2), langgraph-cli dev ที่รัน graph ผ่านโมเดล, `useStream` ทั้ง 2 ทาง, Agent Chat UI, `bindTools` กับ tool จาก MCP, `maxConcurrency` แบบเรียกโมเดล, cache, agentevals (`createAgent` และ LLM judge) · shim แปลง `/api/chat` ของ Ollama เป็น OpenAI chat completions และส่งผลแบบไม่ stream แล้วแตกเป็น NDJSON 2 chunk · พฤติกรรมของ tool call, structured output, streaming และตัวเลข token กับ Google / Ollama Cloud / Ollama ในเครื่องอาจต่างไป ต้องยืนยันใน 6b และตอนรัน `pnpm verify` กับ provider จริง
 
 ## ทำแล้ว (6a)
 
@@ -94,6 +101,13 @@
   - ต้องอนุญาตการเข้าถึงเครือข่ายในเครื่องของ Chrome ก่อน ไม่งั้นขึ้น `Failed to initialize Studio … Failed to fetch`
   - `LANGSMITH_TRACING=false` ตลอดการทดลอง
   - ยังไม่ได้ส่งข้อความรันผ่านหน้า Studio และยังไม่ได้ทดสอบแบบมี key → 6b
+  - ⚠️ **ผลนี้ขัดกับเอกสารออกแบบข้อ 3** ("`npx @langchain/langgraph-cli dev` ต้องมี LangSmith API key") · เงื่อนไขที่เห็นผลนี้:
+    - คำสั่ง `pnpm exec langgraphjs dev --config .langgraph/langgraph.json --port 2024 --no-browser` (`@langchain/langgraph-cli` 1.7.2 + `@langchain/langgraph-api` 1.7.2 ติดตั้งเป็น devDependency ไม่ได้ใช้ `npx`) · Node 26.13.1 · ตั้ง `LANGGRAPH_CLI_NO_ANALYTICS=1`
+    - `.env` และ process env ไม่มี `LANGSMITH_API_KEY` / `LANGCHAIN_API_KEY` · `LANGSMITH_TRACING=false`
+    - server เปิดได้ (`GET /ok` 200) โดยไม่ขอ key · ใน source ของ `dev.mjs` ไม่มีจุดที่บังคับ key
+    - เบราว์เซอร์คือ Chrome 157 headless profile ใหม่ ไม่ได้ล็อกอิน LangSmith · สิทธิ์ local network ให้ผ่าน CDP · URL ถูก redirect ไป `https://smith.langchain.com/studio/thread` แล้วแสดง graph, input schema, ปุ่ม Submit และแถบเตือน "It looks like your LangSmith API key is missing"
+    - สิ่งที่**ยังไม่รู้**: รัน graph จากหน้า Studio ได้จริงไหมเมื่อไม่มี key, ฟีเจอร์ไหนใช้ไม่ได้ และ LangSmith จะบังคับล็อกอินในภายหลังหรือไม่
+  - **การตัดสิน:** ยังไม่เปลี่ยนเอกสารออกแบบ · บท 046 ยังให้ผู้เรียนสมัครและใส่ `LANGSMITH_API_KEY` ตามเดิม · ต้องทดสอบซ้ำด้วย key จริงในข้อ 6b-6 แล้วค่อยตัดสินว่าจะเขียน README บท 046 ว่า key "จำเป็น" หรือ "แนะนำ"
 - **repo ที่ใช้ pnpm:** ✅ ติดตั้งและรันได้ด้วย pnpm strict layout · เปิด server ใช้ราว 2–3 วินาที ทั้ง Node 26 และ 24
 - **schema ของ graph กับ TypeScript 6.0.3:** ✅ `/assistants/{id}/schemas` คืน input schema ได้ แม้ langgraph-api ระบุ peer `typescript ^5.5.4`
 
@@ -219,17 +233,33 @@
 - `pnpm test` ของ repo ทั้งชุดผ่านบน Node 24.22.3 (10 ไฟล์ 109 test)
 - `.env` แบบ CRLF อ่านค่าได้ถูกทั้ง `--env-file` และ `process.loadEnvFile` · `.env` ที่มี BOM ทำให้ชื่อตัวแปรตัวแรกกลายเป็น `﻿FOO` (ยืนยันเหตุผลที่ `.env.example` ขึ้นต้นด้วยคอมเมนต์ และที่ `pnpm preflight` ตรวจ BOM)
 
-### hosting ของบท 147 และ Postgres บน cloud (ค้นจากเอกสารทางการ 2026-11-16)
+### hosting ของบท 147 และ Postgres บน cloud (อ่านจากเอกสารทางการ ดึงหน้าเมื่อ 2026-11-16)
+
+**ข้อสรุป:** Vercel Hobby + Neon Free พอสำหรับบท 146–147 ตามเกณฑ์ข้อ 6 · **ตัวเลือกอื่น (Netlify, Render, Supabase) ยังประเมินไม่ครบ** เพราะหน้าทางการบางหน้าไม่ได้ระบุตัวเลขที่ต้องใช้ (ช่อง "หน้าไม่ระบุ" ในตาราง) · ยังไม่ได้ deploy จริง
+
+แหล่งข้อมูล (ทุกหน้าดึงเมื่อ 2026-11-16 · "อัปเดต" คือวันที่หน้านั้นแสดงเอง):
+
+| รหัส | หน้า | URL | อัปเดต |
+|---|---|---|---|
+| V1 | Vercel Functions Limits | https://vercel.com/docs/functions/limitations | 2026-08-24 |
+| V2 | Vercel Hobby Plan | https://vercel.com/docs/plans/hobby | 2026-11-12 |
+| N1 | Netlify Functions configuration | https://docs.netlify.com/build/functions/configuration/ | ไม่ได้บันทึก |
+| N2 | Netlify Functions overview | https://docs.netlify.com/build/functions/overview/ | 2026-11-10 |
+| N3 | Netlify pricing | https://www.netlify.com/pricing/ | หน้าไม่แสดงวันที่ |
+| R1 | Render Deploy for Free | https://render.com/docs/free | หน้าไม่แสดงวันที่ |
+| R2 | Render Web Services | https://render.com/docs/web-services | หน้าไม่แสดงวันที่ |
+| P1 | Neon Plans | https://neon.com/docs/introduction/plans | 2026-11-12 |
+| P2 | Supabase pricing | https://supabase.com/pricing | ไม่ได้บันทึก |
 
 | ตัวเลือก | แผนฟรี | Node runtime | streaming | เวลาสูงสุดต่อ request | env / Postgres | ผล |
 |---|---|---|---|---|---|---|
-| **Vercel Hobby** | ฟรี | Node เต็มรูป (Fluid compute) | ได้ (เวลา stream นับรวมใน max duration) | **300 วินาที** (ค่าเริ่มต้นและสูงสุดของ Hobby) | ตั้ง env ได้ · ต่อ Postgres ภายนอก (Neon) ด้วย `DATABASE_URL` | **เลือก** |
-| Netlify Functions | ไม่ได้ตรวจรายละเอียดแผนฟรี | ไม่ได้ตรวจ | streamed payload สูงสุด 20 MB | synchronous 60 วินาที ปรับไม่ได้ (background 15 นาที แต่ไม่ใช่ response ที่ stream) | ไม่ได้ตรวจ | ไม่เลือก (เวลาสั้นกว่า Vercel 5 เท่า) |
-| Render Free web service | 750 ชั่วโมง/เดือน | server Node ที่รันต่อเนื่อง | หน้า free ไม่ได้ระบุ | หน้า free ไม่ได้ระบุ | Postgres ฟรีหมดอายุ 30 วัน | สำรอง ถ้า 300 วินาทีไม่พอ (หลับหลังว่าง 15 นาที ตื่นราว 1 นาที) · ต้องตรวจเพิ่มก่อนใช้ |
+| **Vercel Hobby** | ฟรี [V2] | Node เต็มรูป (Fluid compute) [V1] | ได้ เวลา stream นับรวมใน max duration [V1] | **300 วินาที** ทั้งค่าเริ่มต้นและสูงสุดของ Hobby [V1] | ตั้ง env ได้ · ต่อ Postgres ภายนอก (Neon) ด้วย `DATABASE_URL` | **เลือก** |
+| Netlify Functions | "$0 forever" · "300 credit limit" · compute คิด 10 credits ต่อ GB-ชั่วโมง [N3] | หน้าไม่ระบุ [N2, N3] | streamed response payload สูงสุด 20 MB · หน้าไม่ระบุเวลาสูงสุดของ stream [N1] | synchronous 60 วินาที ปรับไม่ได้ · scheduled 30 วินาที · background 15 นาที (background ไม่ใช่ response ที่ stream) [N1] · หน้าไม่ได้บอกว่าแผนฟรีต่างจากนี้ไหม [N1] | หน้า pricing ไม่พูดถึง env ของแผนฟรี [N3] · Next.js หน้าไม่ระบุ [N2, N3] | ไม่เลือก (เวลาสั้นกว่า Vercel 5 เท่า) · ประเมินไม่ครบ |
+| Render Free web service | 750 ชั่วโมงต่อ workspace ต่อเดือน [R1] | รองรับ Node.js (มีตัวอย่าง Express) [R2] | หน้าไม่ระบุ SSE/streaming [R1, R2] · มีรายการ "WebSocket connections" [R2] | หน้าไม่ระบุ [R1, R2] | Postgres ฟรี 1 GB หมดอายุ 30 วันหลังสร้าง แล้วมีช่วงผ่อนผัน 14 วันก่อนลบ [R1] | สำรอง ถ้า 300 วินาทีไม่พอ (หลับหลังไม่มี traffic 15 นาที ตื่นราว 1 นาที [R1]) · ประเมินไม่ครบ ต้องทดสอบเองก่อนใช้ |
 
-- ตัวเลขของ Vercel Hobby (หน้า Functions Limits อัปเดต 2026-08-24 และหน้า Hobby Plan อัปเดต 2026-11-12): RAM 2 GB / 1 vCPU · Active CPU 4 CPU-ชั่วโมง/เดือน · Provisioned Memory 360 GB-ชั่วโมง/เดือน · Function Invocations 1,000,000/เดือน · เกินโควต้าต้องรอ 30 วัน · route ต้องประกาศ `export const maxDuration = 300` ในไฟล์ `src/app/...` เอง
-- Postgres ที่เลือก: **Neon Free** (หน้า Plans อัปเดต 2026-11-12): $0 · 1 GB ต่อโปรเจกต์ (รวม 20 GB) · 100 CU-ชั่วโมงต่อโปรเจกต์ต่อเดือน · 100 โปรเจกต์ · compute หลับหลังว่าง 5 นาทีและปิดไม่ได้ (request แรกหลังหลับช้าลง) · หน้านั้นไม่ได้พูดถึงการลบฐานข้อมูลที่ไม่ได้ใช้
-- ตัวเทียบ: Supabase Free 500 MB, ได้ 2 โปรเจกต์, **หยุดโปรเจกต์หลังไม่มีการใช้ 1 สัปดาห์** · Render Postgres ฟรีหมดอายุ 30 วัน → ไม่เหมาะกับผู้เรียนที่ทำบท 146–147 ห่างกันหลายสัปดาห์
+- ตัวเลขของ Vercel Hobby: RAM 2 GB / 1 vCPU [V1] · Active CPU 4 CPU-ชั่วโมงต่อเดือน · Provisioned Memory 360 GB-ชั่วโมงต่อเดือน · Function Invocations 1,000,000 ต่อเดือน · ใช้เกินโควต้าต้องรอ 30 วัน [V2] · route ต้องประกาศ `export const maxDuration = 300` ในไฟล์ `src/app/...` เอง (ผลการทดลอง Next.js ข้างบน ไม่ใช่จากเอกสาร)
+- Postgres ที่เลือก: **Neon Free** [P1]: $0 ต่อเดือน · 1 GB ต่อโปรเจกต์ (รวม 20 GB ทั้งบัญชี) · 100 CU-ชั่วโมงต่อโปรเจกต์ต่อเดือน · 100 โปรเจกต์ · compute หลับหลังไม่มีการใช้ 5 นาทีและปิดไม่ได้ (request แรกหลังหลับช้าลง) · หน้านั้นไม่ได้พูดถึง connection pooling, การต้องใช้บัตรเครดิต หรือการลบฐานข้อมูลที่ไม่ได้ใช้
+- ตัวเทียบ Postgres: Supabase Free [P2] 500 MB ต่อโปรเจกต์, active ได้ 2 โปรเจกต์, **หยุดโปรเจกต์หลังไม่มีการใช้ 1 สัปดาห์**, egress 5 GB · หน้าไม่ได้บอกว่าแผนฟรีมี connection pooler ไหมและต้องใช้บัตรไหม · Render Postgres ฟรีหมดอายุ 30 วัน [R1] → ทั้งสองไม่เหมาะกับผู้เรียนที่ทำบท 146–147 ห่างกันหลายสัปดาห์
 - ยังไม่ได้ deploy จริง (ต้องใช้บัญชีของผู้ใช้) → แผนที่ 19 ต้องทดสอบตามหัวข้อ "ข้อเสี่ยงที่แผนที่ 19 ต้องทดสอบ" ข้างล่าง
 
 ## ผลที่กระทบแผนหลัง
@@ -285,7 +315,7 @@
 - [ ] **Ollama Cloud (ยิงตรง):**
   - `GET https://ollama.com/api/tags` หัว `Authorization: Bearer <VERIFY_OLLAMA_CLOUD_API_KEY>` → 200 และมีรายการ `models[].name` · **ต้องยืนยันว่าใช้กับ Cloud ได้จริง เพราะ `pnpm preflight` (`scripts/lib/doctor-checks.ts`) ใช้ endpoint นี้** และดูว่า key ผิดได้ 401 จริงไหม
   - `POST https://ollama.com/api/chat` body `{ "model": "<ชื่อ>", "messages": [{ "role": "user", "content": "…" }], "stream": false }` → ภาษาไทยใน `message.content` และมี `prompt_eval_count`/`eval_count`
-  - ถ้า `/api/tags` ของ Cloud ใช้ไม่ได้: แก้ `checkOllama` ใน `scripts/lib/doctor-checks.ts` (Task 3) ไปใช้ endpoint ที่ใช้ได้และ**ไม่เสีย token** แก้ test ใน `doctor-checks.test.ts` ให้ตรง แล้วบันทึก
+  - ถ้า `/api/tags` ของ Cloud ใช้ไม่ได้: แก้ `checkOllama` ใน `scripts/lib/doctor-checks.ts` ไปใช้ endpoint ที่ใช้ได้และ**ไม่เสีย token** แก้ test ใน `doctor-checks.test.ts` ให้ตรง แล้วบันทึก
 - [ ] **Ollama ในเครื่อง:** `GET http://localhost:11434/api/tags` และ `POST http://localhost:11434/api/chat` (body เดียวกัน ใส่ `"options": { "num_ctx": 8192 }`) → ภาษาไทย
 - [ ] **Ollama Cloud ผ่าน `ollama signin`:** `ollama signin` → `ollama pull <ชื่อ>:cloud` → `GET http://localhost:11434/api/tags` ต้องมี `<ชื่อ>:cloud` (ยืนยันข้อความ "ให้รัน ollama pull …" ของ `pnpm preflight`) → `POST http://localhost:11434/api/chat` ด้วยชื่อ `:cloud` ได้ภาษาไทย
 - เกณฑ์ผ่าน: ได้คำตอบภาษาไทยครบ 3 ทาง (Google, Ollama Cloud, Ollama ในเครื่อง)
@@ -328,7 +358,7 @@
 
 ### 6b-6 ข้อที่ 6a ทำได้ไม่ครบ
 
-- [ ] **Studio แบบมี key:** ใส่ `LANGSMITH_API_KEY` ใน `.env` และ `LANGSMITH_TRACING=false` → เปิด langgraph dev ตามวิธีใน 6a → เปิดลิงก์ Studio ในเบราว์เซอร์ที่ล็อกอิน LangSmith แล้ว กดอนุญาตเครือข่ายในเครื่อง → แถบเตือน "API key is missing" ต้องหาย · ส่งข้อความผ่าน Studio แล้วได้คำตอบ · ใน LangSmith ไม่มี trace ใหม่ (เพราะไม่เปิด tracing)
+- [ ] **Studio แบบมี key (ตัดสินข้อขัดกับเอกสารออกแบบข้อ 3 ที่นี่):** 6a เห็นหน้า Studio โหลดได้โดยไม่มี key (ดูหัวข้อ Studio ใน 6a) ซึ่งขัดกับเอกสารออกแบบ → **ต้องทดสอบซ้ำด้วย key จริงก่อนตัดสิน** · ใส่ `LANGSMITH_API_KEY` ใน `.env` และ `LANGSMITH_TRACING=false` → เปิด langgraph dev ตามวิธีใน 6a → เปิดลิงก์ Studio ในเบราว์เซอร์ที่ล็อกอิน LangSmith แล้ว กดอนุญาตเครือข่ายในเครื่อง → แถบเตือน "API key is missing" ต้องหาย · ส่งข้อความผ่าน Studio แล้วได้คำตอบ · ใน LangSmith ไม่มี trace ใหม่ (เพราะไม่เปิด tracing) · ทดสอบแบบไม่มี key ซ้ำด้วยว่าส่งข้อความผ่าน Studio ได้ไหม · บันทึกการตัดสิน: ถ้าแบบไม่มี key รัน graph ได้ครบ README บท 046 เขียนว่า key "แนะนำ" และแก้เอกสารออกแบบข้อ 3 · ถ้าไม่ได้ ให้คง "ต้องมี key" ตามเอกสารออกแบบ
 - [ ] **agentevals judge กับ provider จริง:** `createTrajectoryLLMAsJudge({ judge: <ChatGoogle> })` และ `judge: <ChatOllama ไป Cloud>` · ถ้า Cloud ใช้ไม่ได้เพราะไม่รองรับ JSON schema ให้บันทึก และให้บท 138 ใช้ judge เป็น Google (หรือ `functionCalling` ถ้า openevals เปิดให้ตั้งได้)
 - [ ] **`maxConcurrency` กับ Ollama Cloud:** graph ที่ `Send` 6 งานด้วย `maxConcurrency: 3` ไป Cloud (รับพร้อมกัน 3 request) ต้องไม่เจอ 429 · peak = 3
 
@@ -336,6 +366,6 @@
 
 - [ ] แทน `CHANGE_ME` ของ `OLLAMA_MODEL` (รุ่นในเครื่องที่เลือก), `GOOGLE_MODEL`, `OLLAMA_NUM_CTX` (ค่าจาก 6b-4)
 - [ ] ใส่ชื่อโมเดล Cloud ที่แนะนำ (ต่อท้าย `:cloud` สำหรับทาง `ollama signin` และชื่อเปล่าสำหรับทางยิงตรง) ในบล็อกคอมเมนต์ Ollama Cloud
-- [ ] ใส่ชื่อโมเดลที่เลือกใน README บท 003–005 ตามที่ Task 7 กำหนด
+- [ ] ใส่ชื่อโมเดลที่เลือกใน `lessons/003-setup-ollama-local/README.md`, `lessons/004-setup-ollama-cloud/README.md` และ `lessons/005-setup-google/README.md` (ถ้าไฟล์ยังไม่มี ให้ใส่ตอนสร้างไฟล์เหล่านั้น)
 - [ ] Run: `pnpm check` → ผ่าน และ `.env.example` ไม่มี `CHANGE_ME` เหลือ (`grep CHANGE_ME .env.example` ไม่เจอ)
 - [ ] Commit (ในเครื่องเท่านั้น ห้าม push): `git add internal/spikes.md .env.example` (+ ไฟล์ hook/test/doctor ถ้าแก้) แล้ว `git commit -m "docs: record spike results and chosen models"`
