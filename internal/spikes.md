@@ -396,3 +396,14 @@
 - [ ] ลบหมายเหตุ "ผลของไฟล์ `.google.ts` ในบทนี้ยังไม่ได้ทดสอบ" ใน `lessons/006-raw-fetch/README.md` และเทียบผลขั้นที่ 2 ตัวอย่างใน README กับที่ได้จริง
 - [ ] เขียนผล (วันที่ ตัวเลข token PASS/FAIL) ต่อท้ายหัวข้อ "ผล 6b"
 
+
+### 6b-10: ตรวจเฉลยของบท 001-006 บน branch `solutions` กับ provider จริง (Task 9 ทำได้แค่ opencode-dev)
+
+- Task 9 รัน `pnpm verify 001-006 --provider opencode-dev --repeat 3` ผ่านใน worktree `../LANGGRAPH-solutions` แล้วเท่านั้น (ใช้ไฟล์ `.ollama`) · เฉลย `exercise-*.google.ts` ของบท 006 ผ่าน typecheck แต่ **ยังไม่เคยรัน**
+- [ ] ใน worktree `../LANGGRAPH-solutions` (branch `solutions`) ที่ `.env` มีค่าครบตาม "ก่อนเริ่ม 6b" รัน:
+  - `pnpm check`
+  - `pnpm verify 001-006 --provider google --repeat 3`
+  - `pnpm verify 001-006 --provider ollama-cloud --repeat 3`
+  - `pnpm verify 001-006 --provider ollama`
+- ผลที่คาดหวัง: ✅ ทุกรอบ · บท 001, 003, 004, 005 ขึ้น `– ไม่มีไฟล์ให้รัน` · **จดยอด token รวมของแต่ละ provider** (ขาเข้า/ขาออก) ต่อท้ายหัวข้อ "ผล 6b"
+- ถ้ารอบไหนไม่ผ่าน ให้ดูว่าแก้ที่โค้ดบทหรือที่เกณฑ์ (เกณฑ์ตรวจโครง ไม่ตรวจถ้อยคำ) แก้บน `main` ก่อน แล้ว `git -C ../LANGGRAPH-solutions merge main` · ถ้าเฉลย `.google.ts` ผิด ให้แก้บน `solutions` โดยตรง
