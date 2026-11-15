@@ -416,7 +416,7 @@ export function formatResults(results: CheckResult[]): string;
 ใช้ fake `fetch` ที่ตอบตาม URL
 
 ```ts
-const KEY = "AIzaFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
+const KEY = "AIza" + "FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
 it("ครบทุกอย่าง → ผ่านหมด", async () => expect((await runDoctor(okDeps())).every((r) => r.ok)).toBe(true));
 it("Node 22 → ❌ บท 002", async () =>
   expect((await runDoctor(okDeps({ nodeVersion: "v22.12.0" })))[0]).toMatchObject({ ok: false, lesson: "002" }));
@@ -526,7 +526,7 @@ export function checkVerifyCoverage(root: string): Problem[];
   - และ `.gitignore` ต้องมีบรรทัด `.env`
 - **`checkThaiSaraAm`:**
   - ไล่ใน `lessons`, `src`, `scripts`, `internal`, `docs`, `README.md`
-  - หา `"ํา"` แล้วรายงานเลขบรรทัด พร้อมข้อความแบบ DN_PLAYWRIGHT
+  - หาสระอำที่พิมพ์ผิดรหัส (U+0E4D ตามด้วย U+0E32) แล้วรายงานเลขบรรทัด พร้อมข้อความแบบ DN_PLAYWRIGHT
 - **`checkVerifyCoverage`:** บทที่มีไฟล์ให้รันต้องมี `internal/checks/${number}.ts`
 
 **`scripts/check.ts`** รันทุกกฎ แล้วพิมพ์ปัญหาเป็น `${file}:${line}: ${message}` · ถ้ามีปัญหาให้ exit 1 · ถ้าไม่มีให้พิมพ์ `โครงคอร์สถูกต้อง`
@@ -552,7 +552,7 @@ it("006 มี example.ts เปล่า", () => expect(checkProviderPairs(root
 it("ชื่อโมเดลในโค้ด", () => expect(checkNoHardcodedModels(rootWithSource(`const m = { model: "gemma3" }`))).toHaveLength(1));
 it("อ่านชื่อโมเดลจาก env ได้", () => expect(checkNoHardcodedModels(rootWithSource(`const m = { model: env("OLLAMA_MODEL") }`))).toEqual([]));
 it("เจอ key ของ Google", () => expect(checkNoSecrets(rootWithSource("const k = 'AIza" + "A".repeat(35) + "'"))).toHaveLength(1));
-it("สระอำผิดรหัส บอกเลขบรรทัด", () => expect(checkThaiSaraAm(rootWithReadmeText("บรรทัดแรก\nทํา"))[0].line).toBe(2));
+it("สระอำผิดรหัส บอกเลขบรรทัด", () => expect(checkThaiSaraAm(rootWithReadmeText("บรรทัดแรก\nท" + String.fromCharCode(0x0e4d, 0x0e32)))[0].line).toBe(2));
 it("บทที่มีไฟล์ให้รันแต่ไม่มีไฟล์ตรวจ", () => expect(checkVerifyCoverage(rootWithFiles("002-setup-project", ["example.ts"]))).toHaveLength(1));
 ```
 

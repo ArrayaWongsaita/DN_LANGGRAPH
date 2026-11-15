@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatResults, runDoctor, type DoctorDeps } from "./doctor-checks";
 
-const KEY = "AIzaFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
+const KEY = "AIza" + "FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
 const BOM = "﻿";
 const okEnv = {
   GOOGLE_API_KEY: KEY,
