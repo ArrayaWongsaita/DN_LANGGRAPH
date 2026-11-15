@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CheckFailure, expectIncludes, expectMatches, expectNotIncludes, expectSuccess, expectThai } from "./expect";
+import { CheckFailure, expectIncludes, expectMatches, expectNotIncludes, expectSuccess, expectThai, extractAfter, extractRounds } from "./expect";
 import type { RunResult } from "./types";
 
 function fakeRun(over: Partial<RunResult> = {}): RunResult {
@@ -35,4 +35,19 @@ describe("expect", () => {
     expect(() => expectThai("hello", "คำตอบ")).toThrow(CheckFailure);
     expectThai("สวัสดี", "คำตอบ");
   });
+});
+
+describe("extractAfter / extractRounds", () => {
+  it("extractAfter คืนข้อความหลัง marker หลายบรรทัด", () => {
+    expect(extractAfter("a\nคำตอบ: สวัสดี\nบรรทัดสอง\n", "คำตอบ: ", "x")).toBe("สวัสดี\nบรรทัดสอง");
+  });
+  it("extractAfter ไม่พบ marker", () => expect(() => extractAfter("abc", "คำตอบ: ", "x")).toThrow(CheckFailure));
+  it("extractRounds อ่านหลายรอบและข้อความหลายบรรทัด", () => {
+    const out = "ครั้งที่ 1: ก\nข\n(token 10→20)\nครั้งที่ 2: ค\n(token 11→21)\n";
+    expect(extractRounds(out)).toEqual([
+      { n: 1, text: "ก\nข", inputTokens: 10, outputTokens: 20 },
+      { n: 2, text: "ค", inputTokens: 11, outputTokens: 21 },
+    ]);
+  });
+  it("extractRounds ไม่เจอ คืนอาร์เรย์ว่าง", () => expect(extractRounds("ไม่มี")).toEqual([]));
 });

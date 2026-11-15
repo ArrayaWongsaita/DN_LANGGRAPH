@@ -382,3 +382,14 @@
   - บท 004: ขั้นตอน `ollama signin` (เปิดเบราว์เซอร์?), `ollama pull <ชื่อ>:cloud` โหลดแค่ข้อมูลอ้างอิง, ตำแหน่งหน้าสร้าง API key และปุ่มเติมเครดิต, ข้อความว่าไม่มีโควต้าฟรีและต้องเติมเงินก่อน (ตรวจกับบัญชีจริงและหน้า pricing)
   - บท 002: `corepack enable` บน Windows (EPERM, ทางเลือก `npm i -g pnpm@12`), `pnpm -v` นอกโฟลเดอร์โปรเจกต์ได้เลขอะไร
   - บท 005: ที่อยู่หน้า rate limit/usage ที่แน่นอนใน AI Studio (ใส่ลิงก์ตรง)
+
+### 6b-9: รันบท 006 กับ provider จริง (Task 8 ทำได้แค่ opencode-dev)
+
+- [ ] ไฟล์ `lessons/006-raw-fetch/*.google.ts` **ยังไม่เคยรัน** (เขียนตามเอกสาร Gemini REST: `POST /v1beta/models/{model}:generateContent`, header `x-goog-api-key`, body `contents/parts`, ข้าม part ที่ `thought: true`, token จาก `usageMetadata`) · ตรวจเพิ่มว่า `candidatesTokenCount` ไม่รวม `thoughtsTokenCount` (ถ้ารวม/ไม่รวมต่างกัน ปรับ exercise-2/3 และ README)
+- [ ] Run: `pnpm verify 006 --provider google --repeat 3` → ผ่านครบ (ต้องตั้ง `GOOGLE_API_KEY` และ `GOOGLE_MODEL`)
+- [ ] Run: `pnpm verify 006 --provider ollama-cloud --repeat 3` → ผ่านครบ
+- [ ] Run: `pnpm verify 006 --provider ollama` → ผ่าน 1 รอบ (ตามเกณฑ์ข้อ 5.10)
+- [ ] ตรวจว่า exercise-1.ollama ฉบับ 👉 ที่ยังไม่แก้ ไม่ crash กับ Ollama จริง (`messages` ขาด) และ exercise-1.google ฉบับ 👉 ได้ 400 พร้อมข้อความที่อ่านรู้เรื่อง · opencode-dev ตอบ 502 ในกรณีแรก
+- [ ] ลบหมายเหตุ "ผลของไฟล์ `.google.ts` ในบทนี้ยังไม่ได้ทดสอบ" ใน `lessons/006-raw-fetch/README.md` และเทียบผลขั้นที่ 2 ตัวอย่างใน README กับที่ได้จริง
+- [ ] เขียนผล (วันที่ ตัวเลข token PASS/FAIL) ต่อท้ายหัวข้อ "ผล 6b"
+

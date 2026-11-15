@@ -30,3 +30,20 @@ export function expectMatches(text: string, pattern: RegExp, label: string): Reg
 export function expectThai(text: string, label: string): void {
   if (!/[฀-๿]/.test(text)) throw new CheckFailure(`${label}: ไม่มีอักษรไทย`);
 }
+
+// คืนข้อความทั้งหมดหลัง marker ตัวแรก (ถึงท้าย stdout) ตัดช่องว่างหัวท้าย ใช้กับคำตอบ LLM ที่ขึ้นหลายบรรทัดได้
+export function extractAfter(text: string, marker: string, label: string): string {
+  const i = text.indexOf(marker);
+  if (i < 0) throw new CheckFailure(`${label}: ไม่พบ "${marker}"`);
+  return text.slice(i + marker.length).trim();
+}
+
+export interface Round { n: number; text: string; inputTokens: number; outputTokens: number }
+
+// อ่านผลแบบ "ครั้งที่ N: <ข้อความ ขึ้นได้หลายบรรทัด>" ตามด้วยบรรทัด "(token A→B)"
+export function extractRounds(text: string): Round[] {
+  const re = /ครั้งที่ (\d+): ([\s\S]*?)\n\(token (\d+)→(\d+)\)/g;
+  return [...text.matchAll(re)].map((m) => ({
+    n: Number(m[1]), text: m[2].trim(), inputTokens: Number(m[3]), outputTokens: Number(m[4]),
+  }));
+}
