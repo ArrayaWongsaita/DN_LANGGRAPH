@@ -36,7 +36,7 @@ describe("providerEnv", () => {
       .toEqual({ LLM_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://localhost:11434", OLLAMA_API_KEY: "", OLLAMA_MODEL: "m", OLLAMA_NUM_CTX: "8192" }));
   it("opencode-dev", () =>
     expect(providerEnv("opencode-dev", { DN_OPENCODE_SHIM_URL: "http://127.0.0.1:1", OPENCODE_API_KEY: "a", OPENCODE_DEV_MODEL: "m" }))
-      .toEqual({ LLM_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://127.0.0.1:1", OLLAMA_MODEL: "m" }));
+      .toEqual({ LLM_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://127.0.0.1:1", OLLAMA_MODEL: "m", GOOGLE_MODEL: "dev-placeholder" }));
   it("opencode-dev ขาด env ให้ข้อความไทย", () => {
     expect(() => opencodeDevConfig({})).toThrow(/ยังไม่ได้ตั้งค่า OPENCODE_API_KEY, OPENCODE_DEV_MODEL/);
     expect(opencodeDevConfig({ OPENCODE_API_KEY: "a", OPENCODE_DEV_MODEL: "m" })).toEqual({ apiKey: "a", model: "m" });

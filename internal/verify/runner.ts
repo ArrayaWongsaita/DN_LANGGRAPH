@@ -32,6 +32,8 @@ export function providerEnv(provider: VerifyProvider, base: Record<string, strin
         LLM_PROVIDER: "ollama",
         OLLAMA_BASE_URL: need(base, "DN_OPENCODE_SHIM_URL"),
         OLLAMA_MODEL: opencodeDevConfig(base).model,
+        // มีไว้เพื่อให้ exercise-2 ของบท 002 รันได้ภายใต้ opencode-dev เท่านั้น (ไม่เรียก Google จริง)
+        GOOGLE_MODEL: "dev-placeholder",
       };
     case "ollama":
       return {

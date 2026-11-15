@@ -369,3 +369,11 @@
 - [ ] ใส่ชื่อโมเดลที่เลือกใน `lessons/003-setup-ollama-local/README.md`, `lessons/004-setup-ollama-cloud/README.md` และ `lessons/005-setup-google/README.md` (ถ้าไฟล์ยังไม่มี ให้ใส่ตอนสร้างไฟล์เหล่านั้น)
 - [ ] Run: `pnpm check` → ผ่าน และ `.env.example` ไม่มี `CHANGE_ME` เหลือ (`grep CHANGE_ME .env.example` ไม่เจอ)
 - [ ] Commit (ในเครื่องเท่านั้น ห้าม push): `git add internal/spikes.md .env.example` (+ ไฟล์ hook/test/doctor ถ้าแก้) แล้ว `git commit -m "docs: record spike results and chosen models"`
+
+### 6b-8: เติมค่าที่ README ของบท 003-005 เว้นไว้ (marker `TODO(6b):`)
+
+- [ ] หาจุดทั้งหมดด้วย `grep -rn "TODO(6b)" lessons` แล้วแทนด้วยค่าที่วัดได้ใน 6b-3 และ 6b-4 (ลบข้อความ `TODO(6b): ...` ทั้งก้อน เหลือแต่ค่า) จุดที่ต้องเติม:
+  - `lessons/003-setup-ollama-local/README.md`: ตารางขนาดโมเดลตาม RAM (16 / 32 / 64 GB: ขนาดและชื่อตัวอย่าง), ชื่อโมเดลที่คอร์สแนะนำ, ค่า `OLLAMA_NUM_CTX` พร้อม RAM ที่ใช้เพิ่ม
+  - `lessons/004-setup-ollama-cloud/README.md`: ชื่อโมเดล Cloud ที่แนะนำ (รูป `ชื่อ:cloud` และชื่อเปล่า)
+  - `lessons/005-setup-google/README.md`: ชื่อโมเดล Google ที่แนะนำ (ให้ตรงกับ `GOOGLE_MODEL`)
+- [ ] ตรวจว่า `grep -rn "TODO(6b)" lessons` ไม่เจออะไรเหลือ แล้ว `pnpm check`
