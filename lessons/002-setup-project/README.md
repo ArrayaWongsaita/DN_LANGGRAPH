@@ -28,41 +28,45 @@
 | เครื่องมือ | เวอร์ชัน | ที่ติดตั้ง |
 |---|---|---|
 | Node.js | 24 ขึ้นไป | [nodejs.org](https://nodejs.org) (เลือกรุ่น LTS ที่เป็น 24 ขึ้นไป) |
-| pnpm | 12 | ดูขั้นตอนข้างล่าง |
+| pnpm | 12 | ดูข้อ 3 |
 | Git | ล่าสุด | [git-scm.com](https://git-scm.com) |
 | VS Code | ล่าสุด | [code.visualstudio.com](https://code.visualstudio.com) |
 
-ติดตั้ง Node แล้วเปิด terminal ใหม่ (macOS ใช้ Terminal, Windows ใช้ Windows Terminal แท็บ PowerShell) พิมพ์:
+ติดตั้ง Node, Git และ VS Code แล้ว **เปิด terminal ใหม่** (macOS ใช้ Terminal, Windows ใช้ Windows Terminal แท็บ PowerShell) ตรวจ Node:
 
 ```bash
 node -v
-corepack enable
-pnpm -v
 ```
 
-`node -v` ต้องขึ้นต้นด้วย `v24.` หรือสูงกว่า และ `pnpm -v` ต้องขึ้นต้นด้วย `12.` (ถ้าเปิดในโฟลเดอร์โปรเจกต์จะเป็น `12.21.0` ตามที่โปรเจกต์กำหนด)
+ต้องขึ้นต้นด้วย `v24.` หรือสูงกว่า ส่วน pnpm ให้ทำหลังข้อ 2 (Windows) และข้อ 3
 
-> macOS: ถ้า `corepack enable` ขึ้นว่าไม่มีสิทธิ์ ให้ลอง `sudo corepack enable`
+### 2. Windows PowerShell: แก้ Execution Policy (ทำก่อนใช้ pnpm)
 
-### 2. Windows PowerShell: แก้ Execution Policy
-
-ถ้ารัน `pnpm` ใน PowerShell แล้วขึ้น error ว่า `running scripts is disabled on this system` แปลว่า Windows ห้ามรันสคริปต์ ให้รันคำสั่งนี้ครั้งเดียว แล้วปิดและเปิด terminal ใหม่:
+ถ้าใช้ Windows ให้ทำข้อนี้ **ก่อน** รันคำสั่ง `corepack` หรือ `pnpm` ครั้งแรก มิฉะนั้นจะเจอ error ว่า `running scripts is disabled on this system` เพราะ Windows ห้ามรันสคริปต์ รันคำสั่งนี้ครั้งเดียว แล้วปิดและเปิด terminal ใหม่:
 
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-(ถ้าถามยืนยัน ให้พิมพ์ `Y`) คำสั่งนี้เปลี่ยนเฉพาะผู้ใช้ของคุณ ไม่ต้องเปิดสิทธิ์ Administrator
+(ถ้าถามยืนยัน ให้พิมพ์ `Y`) คำสั่งนี้เปลี่ยนเฉพาะผู้ใช้ของคุณ ไม่ต้องเปิดสิทธิ์ Administrator ผู้ใช้ macOS ข้ามข้อนี้ได้
 
 ### 3. ดึงโปรเจกต์และติดตั้ง
 
+ผู้สอนจะให้ลิงก์ของโปรเจกต์ (ลิงก์ GitHub) ให้แทนที่ `ลิงก์ที่ผู้สอนให้` ด้านล่างด้วยลิงก์นั้นทั้งก้อน (ไม่ต้องเก็บเครื่องหมายใดๆ ไว้):
+
 ```bash
-git clone <ลิงก์ของโปรเจกต์ที่ผู้สอนให้> dn-langgraph
+git clone ลิงก์ที่ผู้สอนให้ dn-langgraph
 cd dn-langgraph
+corepack enable
+pnpm -v
 pnpm install
 ```
 
 คำสั่งทั้งหมดเหมือนกันทั้ง macOS และ PowerShell
+
+- `pnpm -v` ต้องทำ **หลัง** `cd dn-langgraph` เพราะ corepack เลือกเวอร์ชัน pnpm ตามที่โปรเจกต์กำหนดไว้ (ควรขึ้นต้นด้วย `12.`) ถ้าเรียกนอกโฟลเดอร์โปรเจกต์ อาจได้เลขเวอร์ชันอื่น ซึ่งไม่ใช่ปัญหา
+- ถ้า `corepack enable` ขึ้น error เรื่องสิทธิ์ (`EPERM` หรือ permission denied) ให้ใช้ทางใดทางหนึ่ง: macOS ลอง `sudo corepack enable` · Windows เปิด Windows Terminal แบบ Run as administrator แล้วรัน `corepack enable` อีกครั้ง หรือข้ามไปติดตั้ง pnpm ตรงๆ ด้วย `npm i -g pnpm@12` (ยังไม่ได้ทดสอบบน Windows จริง)
+- เมื่อ clone เสร็จ เปิดโปรเจกต์ใน VS Code ด้วย `code .` (รันในโฟลเดอร์โปรเจกต์) หรือเปิดจากเมนู File → Open Folder
 
 ### 4. สร้างไฟล์ `.env`
 
@@ -140,7 +144,7 @@ node -e "console.log('ทดสอบภาษาไทย: สวัสดี �
 
 ### 9. เปิดอ่าน `src/lib/env.ts`
 
-ทุกบทอ่านค่าจาก `.env` ผ่านไฟล์นี้ เปิดใน VS Code แล้วอ่านคร่าวๆ มี 2 ฟังก์ชันที่ใช้ในบทนี้:
+ทุกบทอ่านค่าจาก `.env` ผ่านไฟล์นี้ เปิดใน VS Code (ด้วย `code .` ตามข้อ 3) แล้วอ่านคร่าวๆ มี 2 ฟังก์ชันที่ใช้ในบทนี้:
 
 - `optionalEnv("ชื่อ")` คืนค่า หรือ `undefined` ถ้ายังไม่ตั้ง (ไม่ error)
 - `env("ชื่อ")` คืนค่า หรือ error ที่บอกเลขบทที่ต้องไปตั้งค่า
@@ -149,7 +153,7 @@ node -e "console.log('ทดสอบภาษาไทย: สวัสดี �
 
 ## จุดที่มักพลาด
 
-- **บันทึก `.env` ด้วย Notepad แล้วมี BOM:** ถ้าเลือก Encoding เป็น `UTF-8 with BOM` Notepad จะใส่อักขระล่องหนที่หัวไฟล์ ทำให้ชื่อตัวแปรบรรทัดแรกเพี้ยน ตอนบันทึกใน Notepad ให้เลือก File → Save As → Encoding: `UTF-8` (ไม่มี BOM) `pnpm preflight` จะเตือนถ้าเจอ BOM วิธีที่ง่ายกว่าคือแก้ `.env` ใน VS Code
+- **บันทึก `.env` ด้วย Notepad แล้วมี BOM:** ถ้าเลือก Encoding เป็น `UTF-8 with BOM` Notepad จะใส่อักขระล่องหนที่หัวไฟล์ ทำให้ชื่อตัวแปรบรรทัดแรกเพี้ยน ตอนบันทึกใน Notepad ให้เลือก File → Save As → Encoding: `UTF-8` ถ้าเห็นตัวเลือก `UTF-8 with BOM` อย่าเลือก (Notepad รุ่นเก่ามากอาจเรียก UTF-8 ที่มี BOM ว่า `UTF-8` เฉยๆ) `pnpm preflight` จะเตือนถ้าเจอ BOM วิธีที่ง่ายกว่าคือแก้ `.env` ใน VS Code
 - **ลืมเปิด terminal ใหม่หลังติดตั้ง:** `node` หรือ `pnpm` จะยังไม่พบคำสั่ง ให้ปิดแล้วเปิด terminal ใหม่
 - **คัดลอก `.env.example` ทับ `.env` เดิม:** จะทำให้ค่าที่ใส่ไว้หาย ทำคำสั่งในข้อ 4 แค่ครั้งเดียว
 - **ใส่ค่าใน `.env.example`:** ไฟล์นี้ถูก commit ได้ ห้ามใส่ key จริง ใส่ใน `.env` เท่านั้น

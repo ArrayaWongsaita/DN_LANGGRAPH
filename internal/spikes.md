@@ -377,3 +377,8 @@
   - `lessons/004-setup-ollama-cloud/README.md`: ชื่อโมเดล Cloud ที่แนะนำ (รูป `ชื่อ:cloud` และชื่อเปล่า)
   - `lessons/005-setup-google/README.md`: ชื่อโมเดล Google ที่แนะนำ (ให้ตรงกับ `GOOGLE_MODEL`)
 - [ ] ตรวจว่า `grep -rn "TODO(6b)" lessons` ไม่เจออะไรเหลือ แล้ว `pnpm check`
+- [ ] **ตรวจคำสั่งและขั้นตอนที่ README เขียนโดยยังไม่ได้ทดสอบจริง** (แก้ README ให้ตรงกับที่เห็น แล้วลบหมายเหตุ "ยังไม่ได้ทดสอบ" / "ยังไม่ได้ตรวจกับบัญชีจริง" ออก):
+  - บท 003: slider "Context length" ใน Settings ของแอป Ollama, `launchctl setenv OLLAMA_CONTEXT_LENGTH` (macOS ไม่คงอยู่หลังรีสตาร์ต), `setx OLLAMA_CONTEXT_LENGTH` (Windows ต้อง Quit แล้วเปิด Ollama และ terminal ใหม่), ว่าตัวแปรสภาพแวดล้อมของ Ollama ตั้งผ่าน Settings บน Windows ได้หรือไม่ (เอกสาร FAQ)
+  - บท 004: ขั้นตอน `ollama signin` (เปิดเบราว์เซอร์?), `ollama pull <ชื่อ>:cloud` โหลดแค่ข้อมูลอ้างอิง, ตำแหน่งหน้าสร้าง API key และปุ่มเติมเครดิต, ข้อความว่าไม่มีโควต้าฟรีและต้องเติมเงินก่อน (ตรวจกับบัญชีจริงและหน้า pricing)
+  - บท 002: `corepack enable` บน Windows (EPERM, ทางเลือก `npm i -g pnpm@12`), `pnpm -v` นอกโฟลเดอร์โปรเจกต์ได้เลขอะไร
+  - บท 005: ที่อยู่หน้า rate limit/usage ที่แน่นอนใน AI Studio (ใส่ลิงก์ตรง)
