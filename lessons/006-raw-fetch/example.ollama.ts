@@ -1,4 +1,5 @@
 // บท 006: เรียก Ollama ด้วย fetch ตรงๆ (ไม่ใช้ไลบรารี)
+// (ไฟล์นี้ใช้ await ที่บนสุดของไฟล์ได้ เพราะโปรเจกต์เป็น ES module)
 // ใช้ได้ทั้ง Ollama ในเครื่อง และ Ollama Cloud แบบยิงตรง (ต่างกันแค่ค่าใน .env)
 import { env, optionalEnv } from "../../src/lib/env";
 
@@ -19,8 +20,10 @@ interface RequestParts {
 
 // ขั้นที่ 1: ประกอบคำขอ เป็นฟังก์ชันธรรมดา ไม่ยิงเน็ต ผลเหมือนกันทุกครั้ง
 function buildRequest(question: string): RequestParts {
+  // Content-Type บอกเซิร์ฟเวอร์ว่า body ที่ส่งเป็น JSON
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const apiKey = optionalEnv("OLLAMA_API_KEY");
+  // Bearer คือรูปแบบมาตรฐานของการส่ง token ใน header Authorization
   if (apiKey !== undefined) headers.Authorization = `Bearer ${apiKey}`;
 
   return {

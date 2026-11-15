@@ -385,11 +385,14 @@
 
 ### 6b-9: รันบท 006 กับ provider จริง (Task 8 ทำได้แค่ opencode-dev)
 
-- [ ] ไฟล์ `lessons/006-raw-fetch/*.google.ts` **ยังไม่เคยรัน** (เขียนตามเอกสาร Gemini REST: `POST /v1beta/models/{model}:generateContent`, header `x-goog-api-key`, body `contents/parts`, ข้าม part ที่ `thought: true`, token จาก `usageMetadata`) · ตรวจเพิ่มว่า `candidatesTokenCount` ไม่รวม `thoughtsTokenCount` (ถ้ารวม/ไม่รวมต่างกัน ปรับ exercise-2/3 และ README)
+- [ ] ไฟล์ `lessons/006-raw-fetch/*.google.ts` **ยังไม่เคยรัน** (เขียนตามเอกสาร Gemini REST: `POST /v1beta/models/{model}:generateContent`, header `x-goog-api-key`, body `contents/parts`, ข้าม part ที่ `thought: true`, token จาก `usageMetadata`) · ตรวจกับ Gemini จริงว่า `candidatesTokenCount + thoughtsTokenCount` เท่ากับ token ขาออกที่ถูกคิดเงิน (ดูที่หน้า usage/pricing) และตรงกับตัวเลขของ usage hook (`parseGeminiUsage`) · ถ้าไม่ตรง ปรับ example/exercise-2/3 และ README
+- [ ] ตรวจว่า example.google ที่ไม่มีข้อความ (บล็อก/MAX_TOKENS) throw พร้อม finishReason/promptFeedback จริง และว่า `thought: true` โผล่เมื่อไหร่ (README เขียนว่า "ถ้ามี")
+- [ ] ตรวจกับ Ollama ในเครื่อง: ex3 ถามซ้ำ 3 รอบ `prompt_eval_count` ของรอบ 2-3 ยังมากกว่า 0 (prompt cache ในบางรุ่นอาจทำให้ขาดหรือเล็กมาก)
+- [ ] ตรวจว่า branch `solutions` มีจริงก่อนเผยแพร่ (README/ex ชี้ไป)
 - [ ] Run: `pnpm verify 006 --provider google --repeat 3` → ผ่านครบ (ต้องตั้ง `GOOGLE_API_KEY` และ `GOOGLE_MODEL`)
 - [ ] Run: `pnpm verify 006 --provider ollama-cloud --repeat 3` → ผ่านครบ
 - [ ] Run: `pnpm verify 006 --provider ollama` → ผ่าน 1 รอบ (ตามเกณฑ์ข้อ 5.10)
-- [ ] ตรวจว่า exercise-1.ollama ฉบับ 👉 ที่ยังไม่แก้ ไม่ crash กับ Ollama จริง (`messages` ขาด) และ exercise-1.google ฉบับ 👉 ได้ 400 พร้อมข้อความที่อ่านรู้เรื่อง · opencode-dev ตอบ 502 ในกรณีแรก
+- [ ] ตรวจว่า exercise-1.ollama และ exercise-1.google ฉบับ 👉 ที่ยังไม่แก้ พิมพ์ข้อความ 👉 แล้วจบด้วย exit 0 โดยไม่ยิง API (guard ก่อน fetch) กับ provider จริง
 - [ ] ลบหมายเหตุ "ผลของไฟล์ `.google.ts` ในบทนี้ยังไม่ได้ทดสอบ" ใน `lessons/006-raw-fetch/README.md` และเทียบผลขั้นที่ 2 ตัวอย่างใน README กับที่ได้จริง
 - [ ] เขียนผล (วันที่ ตัวเลข token PASS/FAIL) ต่อท้ายหัวข้อ "ผล 6b"
 

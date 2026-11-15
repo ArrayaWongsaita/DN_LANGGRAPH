@@ -1,4 +1,5 @@
 // บท 006: เรียก Gemini ด้วย fetch ตรงๆ (ไม่ใช้ไลบรารี)
+// (ไฟล์นี้ใช้ await ที่บนสุดของไฟล์ได้ เพราะโปรเจกต์เป็น ES module)
 import { env } from "../../src/lib/env";
 
 const QUESTION = "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง";
@@ -9,8 +10,9 @@ interface GeminiPart {
   thought?: boolean; // true = ส่วนที่โมเดลคิดในใจ ไม่ใช่คำตอบ
 }
 interface GeminiResponse {
-  candidates?: { content?: { parts?: GeminiPart[] } }[];
-  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  candidates?: { content?: { parts?: GeminiPart[] }; finishReason?: string }[];
+  promptFeedback?: unknown;
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 }
 
 interface RequestParts {
@@ -19,12 +21,27 @@ interface RequestParts {
   body: unknown;
 }
 
+// ต่อ text ของทุก part ที่ไม่ใช่ thought ถ้าไม่มีข้อความเลย (เช่นถูกบล็อกหรือตอบไม่จบ) ให้ throw พร้อมเหตุผล
+function extractText(data: GeminiResponse): string {
+  const candidate = data.candidates?.[0];
+  const text = (candidate?.content?.parts ?? [])
+    .filter((part) => part.thought !== true)
+    .map((part) => part.text ?? "")
+    .join("");
+  if (text === "") {
+    const reason = `finishReason=${candidate?.finishReason ?? "ไม่มี"} promptFeedback=${JSON.stringify(data.promptFeedback ?? null)}`;
+    throw new Error(`Gemini ไม่ส่งข้อความกลับมา (${reason})`);
+  }
+  return text;
+}
+
 // ขั้นที่ 1: ประกอบคำขอ เป็นฟังก์ชันธรรมดา ไม่ยิงเน็ต ผลเหมือนกันทุกครั้ง
 // key ส่งใน header ไม่ใส่ใน URL (URL อาจถูกบันทึกลง log)
 function buildRequest(question: string): RequestParts {
   return {
-    url: `https://generativelanguage.googleapis.com/v1beta/models/${env("GOOGLE_MODEL")}:generateContent`,
+    url: `https://generativelanguage.googleapis.com/v1beta/models/${env("GOOGLE_MODEL").replace(/^models\//, "")}:generateContent`,
     headers: {
+      // Content-Type บอกเซิร์ฟเวอร์ว่า body ที่ส่งเป็น JSON
       "Content-Type": "application/json",
       "x-goog-api-key": env("GOOGLE_API_KEY"),
     },
@@ -61,10 +78,4 @@ if (!res.ok) {
   throw new Error(`Gemini ตอบ ${res.status}: ${await res.text()}`);
 }
 const data = (await res.json()) as GeminiResponse;
-// คำตอบอาจแบ่งเป็นหลาย part และบาง part เป็นส่วนที่โมเดลคิด (thought: true) ต้องข้าม
-const parts = data.candidates?.[0]?.content?.parts ?? [];
-const answer = parts
-  .filter((part) => part.thought !== true)
-  .map((part) => part.text ?? "")
-  .join("");
-console.log(`คำตอบ: ${answer}`);
+console.log(`คำตอบ: ${extractText(data)}`);

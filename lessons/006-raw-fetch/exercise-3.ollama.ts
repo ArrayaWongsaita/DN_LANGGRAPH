@@ -11,8 +11,6 @@
 // 2. จุด 👉 ที่ 1: เขียนตัว ask
 // 3. จุด 👉 ที่ 2: เขียนลูป 3 รอบใน main ด้วย for และ await ในลูป
 // 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 006 exercise-3.ollama
-import { env, optionalEnv } from "../../src/lib/env";
-
 const QUESTION = "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง";
 
 export interface OllamaChatResponse {
@@ -29,10 +27,8 @@ interface Answer {
 
 // 👉 เขียนตัว ask: สร้าง headers (ใส่ Authorization ถ้ามี OLLAMA_API_KEY), fetch, ตรวจ res.ok, อ่าน JSON
 function ask(question: string): Promise<Answer> {
-  void question;
-  void env;
-  void optionalEnv;
-  return Promise.resolve({ text: "", inputTokens: 0, outputTokens: 0 });
+  // ค่าชั่วคราว ลบเมื่อเขียนเสร็จ (เพิ่ม import env, optionalEnv ที่หัวไฟล์ด้วย)
+  return Promise.resolve({ text: `(ยังไม่ได้เขียน ask) ${question}`, inputTokens: 0, outputTokens: 0 });
 }
 
 export async function main(): Promise<void> {

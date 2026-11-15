@@ -8,16 +8,14 @@
 //
 // แนวทาง:
 // 1. ย้ายโค้ด fetch จาก exercise-1 และ exercise-2 มาไว้ในตัว ask
-// 2. จุด 👉 ที่ 1: เขียนตัว ask (อย่าลืมข้าม part ที่ thought เป็น true)
+// 2. จุด 👉 ที่ 1: เขียนตัว ask (ข้าม part ที่ thought เป็น true, ขาออก = candidatesTokenCount + thoughtsTokenCount, และ throw ถ้าไม่มีข้อความเลย)
 // 3. จุด 👉 ที่ 2: เขียนลูป 3 รอบใน main ด้วย for และ await ในลูป
 // 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 006 exercise-3.google
-import { env } from "../../src/lib/env";
-
 const QUESTION = "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง";
 
 export interface GeminiResponse {
   candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
-  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 }
 
 interface Answer {
@@ -28,9 +26,8 @@ interface Answer {
 
 // 👉 เขียนตัว ask: fetch ไป generateContent ด้วย header x-goog-api-key, ตรวจ res.ok, อ่าน JSON
 function ask(question: string): Promise<Answer> {
-  void question;
-  void env;
-  return Promise.resolve({ text: "", inputTokens: 0, outputTokens: 0 });
+  // ค่าชั่วคราว ลบเมื่อเขียนเสร็จ (เพิ่ม import env ที่หัวไฟล์ด้วย)
+  return Promise.resolve({ text: `(ยังไม่ได้เขียน ask) ${question}`, inputTokens: 0, outputTokens: 0 });
 }
 
 export async function main(): Promise<void> {
