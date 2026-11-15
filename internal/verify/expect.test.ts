@@ -27,6 +27,18 @@ describe("expect", () => {
     expectNotIncludes("abc", "", "x");
     expect(() => expectNotIncludes("abc", "a", "x")).toThrow(CheckFailure);
   });
+  it("expectNotIncludes ไม่พิมพ์ค่าที่ห้ามมีลงในข้อความ error", () => {
+    const secret = "SECRETVALUE" + "12345";
+    try {
+      expectNotIncludes(`out ${secret} out`, secret, "x");
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(CheckFailure);
+      expect((e as Error).message).not.toContain(secret);
+      expect((e as Error).message).not.toContain("SECRET");
+      expect((e as Error).message).toContain(String(secret.length));
+    }
+  });
   it("expectMatches คืนผลจับคู่", () => {
     expect(expectMatches("n=42", /n=(\d+)/, "x")[1]).toBe("42");
     expect(() => expectMatches("n", /\d/, "x")).toThrow(CheckFailure);

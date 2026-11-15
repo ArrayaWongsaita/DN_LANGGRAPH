@@ -133,7 +133,7 @@ export function checkNoHardcodedModels(root: string): Problem[] {
   return problems;
 }
 
-const SECRET_PATTERNS = [/AIza[0-9A-Za-z_-]{35}/, /lsv2_[a-z]{2}_[0-9a-f]{20,}/];
+const SECRET_PATTERNS = [/AIza[0-9A-Za-z_-]{35}/, /lsv2_[a-z]{2}_[0-9a-f]{20,}/, /oc_sk_[A-Za-z0-9_-]{16,}/];
 
 function isBinary(file: string): boolean {
   const fd = fs.openSync(file, "r");

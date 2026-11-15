@@ -18,7 +18,7 @@ export function expectIncludes(text: string, needle: string, label: string): voi
 
 export function expectNotIncludes(text: string, needle: string | undefined, label: string): void {
   if (needle === undefined || needle === "") return;
-  if (text.includes(needle)) throw new CheckFailure(`${label}: ไม่ควรมี "${needle}"`);
+  if (text.includes(needle)) throw new CheckFailure(`${label}: พบค่าที่ไม่ควรมี (ยาว ${needle.length} ตัวอักษร ไม่แสดงค่า)`);
 }
 
 export function expectMatches(text: string, pattern: RegExp, label: string): RegExpMatchArray {

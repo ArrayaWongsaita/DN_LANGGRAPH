@@ -121,6 +121,10 @@ describe("course rules", () => {
   it("เจอ key ของ Google", () => expect(checkNoSecrets(rootWithSource("const k = 'AIza" + "A".repeat(35) + "'"))).toHaveLength(1));
   it("เจอ key ของ LangSmith", () =>
     expect(checkNoSecrets(rootWithSource("const k = 'lsv2_pt_" + "a1".repeat(10) + "'"))).toHaveLength(1));
+  it("เจอ key ของ opencode", () =>
+    expect(checkNoSecrets(rootWithSource("const k = 'oc_sk" + "_" + "a1B2".repeat(6) + "'"))).toHaveLength(1));
+  it("oc_sk_ สั้นเกินไป (ข้อความอธิบาย) ไม่ถูกจับ", () =>
+    expect(checkNoSecrets(rootWithSource("// prefix oc_sk" + "_xxx"))).toEqual([]));
   it(".env ไม่ถูกไล่ แต่ .env.example ถูกไล่", () => {
     const root = newRoot();
     write(root, ".env", "K=AIza" + "A".repeat(35));

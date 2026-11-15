@@ -25,6 +25,7 @@ describe("env", () => {
     expect(() => optionalEnv("EMBEDDINGS_PROVIDER", { EMBEDDINGS_PROVIDER: "x" })).toThrow(EnvError);
   });
   it("EnvError มีชื่อ variable lesson", () => {
+    expect.assertions(3);
     try { env("GOOGLE_MODEL", {}); } catch (e) {
       expect((e as EnvError).name).toBe("EnvError");
       expect((e as EnvError).variable).toBe("GOOGLE_MODEL");
