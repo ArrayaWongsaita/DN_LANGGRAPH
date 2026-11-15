@@ -7,7 +7,7 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "lesson": "tsx scripts/lesson.ts",
-    "doctor": "tsx scripts/doctor.ts",
+    "preflight": "tsx scripts/doctor.ts",
     "check": "tsx scripts/check.ts && tsc --noEmit && eslint .",
     "verify": "node --env-file-if-exists=.env --import tsx scripts/verify.ts",
     "test": "vitest run",

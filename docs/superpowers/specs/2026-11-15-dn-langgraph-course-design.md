@@ -85,7 +85,7 @@ DN_LANGGRAPH/
 │  ├─ lib/                 ตัวช่วยกลาง (ข้อ 5.4)
 │  ├─ shop/                ข้อมูลและฟังก์ชันของ DN Shop + MCP server (ข้อ 5.5)
 │  └─ app/                 Next.js มีแค่ไฟล์สั้นๆ ที่ชี้ไปไฟล์ในโฟลเดอร์บท (ข้อ 5.8)
-├─ scripts/                lesson, studio, doctor, check, verify (ข้อ 5.2, 5.10)
+├─ scripts/                lesson, studio, preflight (doctor.ts), check, verify (ข้อ 5.2, 5.10)
 ├─ internal/               ของผู้สอน: ไฟล์ตรวจผลของแต่ละบท (ข้อ 5.10)
 └─ .github/workflows/ci.yml
 ```
@@ -97,7 +97,7 @@ DN_LANGGRAPH/
 
 | คำสั่ง | ทำอะไร | ใช้ตั้งแต่บท |
 |---|---|---|
-| `pnpm doctor` | ตรวจ Node, pnpm, `.env`, key ของ Google และ Ollama ตามที่ตั้งไว้ (ในเครื่อง: เปิดอยู่ไหม `pull` โมเดลแล้วหรือยัง · cloud: key ใช้ได้ไหม) · ไม่ใช้ token · ข้อความเป็นภาษาไทยบอกว่าต้องกลับไปดูบทไหน | 002 |
+| `pnpm preflight` | ตรวจ Node, pnpm, `.env`, key ของ Google และ Ollama ตามที่ตั้งไว้ (ในเครื่อง: เปิดอยู่ไหม `pull` โมเดลแล้วหรือยัง · cloud: key ใช้ได้ไหม) · ไม่ใช้ token · ข้อความเป็นภาษาไทยบอกว่าต้องกลับไปดูบทไหน | 002 |
 | `pnpm lesson NNN` | รัน `example.ts` ของบท | 002 |
 | `pnpm lesson NNN <ชื่อไฟล์>` | รันไฟล์ที่ระบุ ไม่ต้องพิมพ์ `.ts` เช่น `pnpm lesson 007 example.google`, `pnpm lesson 030 exercise-1` | 006 |
 | `pnpm studio NNN` | เปิด langgraph dev server ของบทนั้น แล้วพิมพ์ลิงก์ Studio (ข้อ 5.7) | 046 |
@@ -316,7 +316,7 @@ DN_LANGGRAPH/
 
 ## 8. ลำดับการสร้างที่แนะนำ
 
-1. โครง repo, `package.json`, `scripts/lesson`, `scripts/doctor`, `scripts/renumber`, `src/lib/env.ts`, `pnpm check` และ CI · `scripts/renumber` ใช้แทรกหรือลบบททีหลัง: เปลี่ยนชื่อโฟลเดอร์ เลขบทที่อ้างใน README ทุกบท และไฟล์ใน `internal/checks/`
+1. โครง repo, `package.json`, `scripts/lesson`, `scripts/doctor.ts` (คำสั่ง `pnpm preflight`), `scripts/renumber`, `src/lib/env.ts`, `pnpm check` และ CI · `scripts/renumber` ใช้แทรกหรือลบบททีหลัง: เปลี่ยนชื่อโฟลเดอร์ เลขบทที่อ้างใน README ทุกบท และไฟล์ใน `internal/checks/`
 2. ข้อมูลร้าน `src/shop/`
 3. ลองทุกข้อในข้อ 7 และเลือกโมเดลหลักตามข้อ 6
 4. สร้างบททีละช่วงตามลำดับ: README, ตัวอย่าง, แบบฝึก, เฉลยบน `solutions` และไฟล์ตรวจใน `internal/checks/` · จบแต่ละช่วงรัน `pnpm verify` ของช่วงนั้นให้ผ่าน แล้ว **หยุดให้ผู้ใช้ตรวจ** ก่อนเริ่มช่วงถัดไป · ไม่สร้างช่วงหลังๆ ล่วงหน้า **(ผู้ออกแบบเลือก:** ลำดับบทถือว่านิ่งเมื่ออนุมัติเอกสารนี้ ถ้าผู้ใช้อยากปรับตอนตรวจ การแก้ช่วงที่ยังไม่ได้สร้างไม่มีต้นทุน)

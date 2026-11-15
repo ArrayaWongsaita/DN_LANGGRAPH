@@ -46,7 +46,7 @@ function checkNode(deps: DoctorDeps): CheckResult {
 function checkPnpm(deps: DoctorDeps): CheckResult {
   return deps.userAgent?.startsWith("pnpm/12.")
     ? pass("pnpm 12")
-    : fail("pnpm", "ต้องรันผ่าน pnpm รุ่น 12 (ลอง corepack enable แล้วรันใหม่ด้วย pnpm doctor)", "002");
+    : fail("pnpm", "ต้องรันผ่าน pnpm รุ่น 12 (ลอง corepack enable แล้วรันใหม่ด้วย pnpm preflight)", "002");
 }
 
 function checkEnvFile(deps: DoctorDeps): CheckResult {

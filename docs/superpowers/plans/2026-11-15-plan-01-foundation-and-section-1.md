@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** สร้างฐานของ repo (คำสั่ง `pnpm lesson`, `pnpm doctor`, `pnpm check`, `pnpm verify`, CI), ทดลองทุกเรื่องที่ต้องลองก่อนสร้าง, เลือกโมเดลหลัก แล้วสร้างบท 001–006 ให้ครบทั้ง `main` และ `solutions` เป็นตัวอย่างรูปแบบบทให้ผู้ใช้ตรวจ
+**Goal:** สร้างฐานของ repo (คำสั่ง `pnpm lesson`, `pnpm preflight`, `pnpm check`, `pnpm verify`, CI), ทดลองทุกเรื่องที่ต้องลองก่อนสร้าง, เลือกโมเดลหลัก แล้วสร้างบท 001–006 ให้ครบทั้ง `main` และ `solutions` เป็นตัวอย่างรูปแบบบทให้ผู้ใช้ตรวจ
 
 **Architecture:** package เดียวแบบ DN_PLAYWRIGHT (แบบ A ในเอกสารออกแบบ) · สคริปต์ทุกตัวเป็น TypeScript ที่รันผ่าน tsx · บทเรียนรันเป็น child process ของ Node ที่โหลด `.env` ด้วย `--env-file-if-exists` · ระบบตรวจของผู้สอนรันบทจริงกับโมเดลจริง แล้วตรวจ stdout ด้วยไฟล์ตรวจรายบท และนับ token ด้วย hook ที่ครอบ `fetch`
 
@@ -18,7 +18,7 @@
 
 | แผน | ช่วง | ส่วนกลางที่แผนนั้นเพิ่ม |
 |---|---|---|
-| 1 (แผนนี้) | ฐาน repo + ช่วง 1 (001–006) | `src/lib/env.ts`, สคริปต์ lesson / doctor / check / verify, CI, ผลทดลอง, `.env.example` |
+| 1 (แผนนี้) | ฐาน repo + ช่วง 1 (001–006) | `src/lib/env.ts`, สคริปต์ lesson / preflight (scripts/doctor.ts) / check / verify, CI, ผลทดลอง, `.env.example` |
 | 2 | ช่วง 2 (007–016) | `@langchain/core`, `@langchain/ollama`, `@langchain/google` · `src/lib/ask.ts` · ส่ง `input` เข้า stdin ใน verify · `scripts/renumber` (เอกสารออกแบบใส่ไว้ในขั้นแรก แต่ย้ายมาแผนนี้ เพราะตอนนี้ยังมีแค่ 6 บท สคริปต์จะเริ่มมีประโยชน์เมื่อมีบทมากขึ้น) |
 | 3 | ช่วง 3 (017–022) | `src/shop/` สินค้า ลูกค้า คำสั่งซื้อ และฟังก์ชันข้อมูล · `zod` |
 | 4 | ช่วง 4 (023–028) | `langchain` · `src/lib/model.ts`, `src/lib/structured.ts` |
@@ -79,10 +79,10 @@ Task 1–5 ไม่ต้องใช้ key
 ## Review Focus
 
 1. **`.env` ไม่มีตัวแปร หรือมีแต่ช่องว่าง:** ผู้เรียนต้องเห็นข้อความไทยบรรทัดเดียวที่บอกชื่อตัวแปรและบทที่สอนวิธีตั้ง ไม่ใช่ stack trace → ทดสอบใน Task 1 (`env`) และ Task 2 (`run-cli`)
-2. **`.env` ถูกบันทึกเป็น UTF-8 แบบมี BOM** (Notepad บน Windows ทำแบบนี้): `pnpm doctor` ต้องบอกและบอกวิธีแก้ · `.env.example` เริ่มด้วยบรรทัดคอมเมนต์ BOM จึงไม่ไปติดชื่อตัวแปร → ทดสอบใน Task 3
+2. **`.env` ถูกบันทึกเป็น UTF-8 แบบมี BOM** (Notepad บน Windows ทำแบบนี้): `pnpm preflight` ต้องบอกและบอกวิธีแก้ · `.env.example` เริ่มด้วยบรรทัดคอมเมนต์ BOM จึงไม่ไปติดชื่อตัวแปร → ทดสอบใน Task 3
 3. **พิมพ์เลขบทเป็น `7` หรือ `07` หรือพิมพ์ชื่อไฟล์มี `.ts` ต่อท้าย:** ต้องหาบทและไฟล์เจอ → ทดสอบใน Task 2
 4. **`OLLAMA_BASE_URL` มี `/` ต่อท้าย หรือลืม `http://`:** ต้องตัด `/` ให้เอง หรือบอกว่าผิดพร้อมเลขบท → ทดสอบใน Task 1
-5. **provider ต่อไม่ได้หรือ key ผิดตอนรัน `pnpm doctor`:** ต้องขึ้น ❌ พร้อมเลขบท ห้ามโปรแกรมพัง และห้ามพิมพ์ค่า key → ทดสอบใน Task 3
+5. **provider ต่อไม่ได้หรือ key ผิดตอนรัน `pnpm preflight`:** ต้องขึ้น ❌ พร้อมเลขบท ห้ามโปรแกรมพัง และห้ามพิมพ์ค่า key → ทดสอบใน Task 3
 
 ---
 
@@ -126,7 +126,7 @@ git commit -m "docs: add course design, outline and plan 1"
   - `engines` = `{ "node": ">=24" }`, `packageManager` = `pnpm@12.21.0`
   - `scripts`:
     - `lesson` = `tsx scripts/lesson.ts`
-    - `doctor` = `tsx scripts/doctor.ts`
+    - `preflight` = `tsx scripts/doctor.ts`
     - `check` = `tsx scripts/check.ts && tsc --noEmit && eslint .`
     - `verify` = `node --env-file-if-exists=.env --import tsx scripts/verify.ts`
     - `test` = `vitest run`
@@ -361,7 +361,7 @@ git add scripts
 git commit -m "feat: add pnpm lesson runner"
 ```
 
-### Task 3: `pnpm doctor`
+### Task 3: `pnpm preflight`
 
 **Files:**
 - Create: `scripts/lib/doctor-checks.ts`, `scripts/doctor.ts`
@@ -458,10 +458,10 @@ Expected: FAIL
 
 - [ ] **Step 4: รัน test ให้ผ่าน แล้วลองรันจริงโดยยังไม่มี `.env`**
 
-Run: `pnpm test scripts/lib/doctor-checks.test.ts && pnpm doctor`
+Run: `pnpm test scripts/lib/doctor-checks.test.ts && pnpm preflight`
 Expected:
 - test ผ่าน
-- `pnpm doctor` ได้ ✅ ที่ Node และ pnpm
+- `pnpm preflight` ได้ ✅ ที่ Node และ pnpm
 - ❌ ที่ `.env` พร้อม "(ดูบท 002)"
 - exit 1 และไม่มี stack trace
 
@@ -469,7 +469,7 @@ Expected:
 
 ```bash
 git add scripts
-git commit -m "feat: add pnpm doctor"
+git commit -m "feat: add pnpm preflight"
 ```
 
 ### Task 4: `pnpm check` และ CI
@@ -745,9 +745,9 @@ git commit -m "feat: add instructor verify harness with token usage"
 
 - [ ] **Step 1: ทดสอบ endpoint ของ provider (ใช้ fetch อย่างเดียว)**
   - Google: เรียก `GET .../v1beta/models` และ `POST .../models/{model}:generateContent`
-  - Ollama Cloud: เรียก `GET https://ollama.com/api/tags` และ `POST https://ollama.com/api/chat` ด้วย Bearer key (ยืนยันว่า `/api/tags` ใช้กับ Cloud ได้จริง เพราะ `pnpm doctor` ต้องใช้)
+  - Ollama Cloud: เรียก `GET https://ollama.com/api/tags` และ `POST https://ollama.com/api/chat` ด้วย Bearer key (ยืนยันว่า `/api/tags` ใช้กับ Cloud ได้จริง เพราะ `pnpm preflight` ต้องใช้)
   - Ollama ในเครื่อง: เรียก `/api/tags` และ `/api/chat`
-  - Ollama Cloud ผ่าน `ollama signin`: โมเดลชื่อ `:cloud` ต้องขึ้นใน `/api/tags` ของเครื่อง หลัง `ollama pull` (ใช้ยืนยันข้อความ "ollama pull" ของ `pnpm doctor`)
+  - Ollama Cloud ผ่าน `ollama signin`: โมเดลชื่อ `:cloud` ต้องขึ้นใน `/api/tags` ของเครื่อง หลัง `ollama pull` (ใช้ยืนยันข้อความ "ollama pull" ของ `pnpm preflight`)
   - เกณฑ์ผ่าน: ได้คำตอบภาษาไทยทั้ง 3 ทาง · ถ้า `/api/tags` ของ Cloud ใช้ไม่ได้ ให้แก้ Task 3 ไปใช้ endpoint ที่ใช้ได้และไม่เสีย token แล้วบันทึกไว้
 
 - [ ] **Step 2: ทดสอบ usage hook กับ LangChain จริง**
@@ -802,7 +802,7 @@ git commit -m "feat: add instructor verify harness with token usage"
   ขั้นตอนให้ผู้ใช้รันบน Windows PowerShell ทีละข้อ พร้อมผลที่ควรเห็น:
   - ตั้ง UTF-8 แล้วพิมพ์และแสดงภาษาไทยได้
   - `pnpm install`
-  - `pnpm doctor`
+  - `pnpm preflight`
   - `pnpm lesson 002` และ `pnpm lesson 006 example.google`
   - `.env` ที่บันทึกจาก Notepad
   - ข้อที่รอแผนหลัง (`ask()` ภาษาไทย, better-sqlite3, MCP stdio) ใส่ไว้เป็นหัวข้อ "ทดสอบเมื่อถึงแผนที่ N"
@@ -828,7 +828,7 @@ git commit -m "docs: record spike results and chosen models"
 - Create: `internal/checks/002.ts`
 
 **Interfaces:**
-- Consumes: `env`, `optionalEnv` จาก `src/lib/env` · `pnpm doctor` · `LessonChecks`, `expectSuccess`, `expectMatches`, `expectThai` จาก Task 5
+- Consumes: `env`, `optionalEnv` จาก `src/lib/env` · `pnpm preflight` · `LessonChecks`, `expectSuccess`, `expectMatches`, `expectThai` จาก Task 5
 
 **เนื้อหาแต่ละบท** มาจากแถวของบทนั้นในลำดับบทเรียน · README ใช้หัวข้อตาม `README_HEADINGS` (ไม่มี "เปิดดูใน Studio") · บทที่ไม่มีโค้ดให้หัวข้อ "วิธีรัน" บอกว่าทำที่ไหน และหัวข้อ "แบบฝึกหัด" เป็นงานที่ทำนอกโค้ด · ทุก README ใช้คำสั่งที่ใช้ได้ทั้ง macOS และ PowerShell (ถ้าต่างกันให้แสดงทั้ง 2 แบบ)
 
@@ -843,7 +843,7 @@ git commit -m "docs: record spike results and chosen models"
     - ติดตั้ง: Node 24, pnpm 12, Git และ VS Code
     - วิธีแก้ Execution Policy บน PowerShell แบบ DN_PLAYWRIGHT
     - `git clone`, `pnpm install`, คัด `.env.example` เป็น `.env` (`cp` / `Copy-Item`)
-    - `pnpm lesson 002` และ `pnpm doctor` (ตอนนี้ยังมี ❌ ได้ จะแก้ในบท 003–005)
+    - `pnpm lesson 002` และ `pnpm preflight` (ตอนนี้ยังมี ❌ ได้ จะแก้ในบท 003–005)
     - ตั้ง UTF-8 ใน PowerShell (`[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` และวิธีตั้งถาวรใน profile)
     - เตือนเรื่องบันทึก `.env` ด้วย Notepad แล้วมี BOM
     - อธิบายเครื่องหมาย 👉
@@ -861,15 +861,15 @@ git commit -m "docs: record spike results and chosen models"
   - ตารางเลือกขนาดโมเดลตาม RAM
   - ค่า context
   - บนสุดบอกว่า "ทำบท 003 หรือ 004 อย่างน้อย 1 บท ตามที่ผู้สอนบอกในรอบนั้น" · เครื่องช้าให้ไปบท 004
-  - จบด้วยแถว Ollama ของ `pnpm doctor` เป็น ✅
+  - จบด้วยแถว Ollama ของ `pnpm preflight` เป็น ✅
 - **004:**
   - บอก 2 วิธี:
     - `ollama signin` แล้วใช้ชื่อโมเดล `:cloud` โดย base URL ยังเป็น localhost
     - ยิงตรงด้วย `OLLAMA_BASE_URL=https://ollama.com` + `OLLAMA_API_KEY`
   - ข้อจำกัดของ Cloud: รับพร้อมกัน 3 request, ไม่รองรับ structured output แบบ JSON schema, ไม่มีโมเดล embedding
   - เรื่องราคา: ให้ลิงก์หน้าราคา ไม่ใส่ตัวเลขที่จะเก่า
-  - จบด้วย `pnpm doctor` เป็น ✅
-- **005:** ตามแถวบท 005 ในลำดับบทเรียน · จบด้วยแถว Google ของ `pnpm doctor` เป็น ✅
+  - จบด้วย `pnpm preflight` เป็น ✅
+- **005:** ตามแถวบท 005 ในลำดับบทเรียน · จบด้วยแถว Google ของ `pnpm preflight` เป็น ✅
 
 **เกณฑ์ใน `internal/checks/002.ts`:**
 
@@ -1050,7 +1050,7 @@ git -C ../LANGGRAPH-solutions merge main
 
 - **ส่วนต้น:** บรรทัดแนะนำคอร์สแบบ DN_PLAYWRIGHT (จำนวนบท ช่วง และ DN Shop)
 - **ก่อนเริ่ม:** ใช้ตารางสิ่งที่ต้องมีจากลำดับบทเรียน
-- **วิธีรัน:** ใส่เฉพาะคำสั่งที่มีแล้ว (`pnpm lesson`, `pnpm doctor`)
+- **วิธีรัน:** ใส่เฉพาะคำสั่งที่มีแล้ว (`pnpm lesson`, `pnpm preflight`)
 - **สารบัญ:**
   - ตารางช่วงที่ 1 มีคอลัมน์ บท, โฟลเดอร์, ฝึก
   - บท 001–006 ติด 🏫 ตามข้อเสนอ 001–046
