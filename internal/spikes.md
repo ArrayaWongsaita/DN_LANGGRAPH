@@ -1,0 +1,341 @@
+# ผลทดลองก่อนสร้าง (แผนที่ 1 · Task 6)
+
+ไฟล์นี้บันทึกผลทดลองที่แผนหลังๆ ต้องใช้ ตามภาคผนวกแก้แผน (2026-11-16) งาน 6 แบ่งเป็น 2 ส่วน:
+
+- **6a (ทำแล้ว 2026-11-16):** เรื่องที่ทดลองได้โดยไม่ต้องใช้ Google / Ollama Cloud / Ollama ในเครื่อง · ข้อที่ต้องเรียกโมเดลใช้ `ChatOllama` ชี้ไปที่ opencode shim (`internal/dev/opencode-shim.ts`)
+- **6b (เลื่อนไปท้ายสุด):** เรื่องที่ต้องใช้ key จริงของ Google, Ollama Cloud, LangSmith หรือ Ollama ในเครื่อง · checklist อยู่ในหัวข้อ "เลื่อนไปท้ายสุด (6b)" ทำตามได้โดยไม่ต้องเปิดแผนอีก
+
+โค้ดทดลองทั้งหมดอยู่นอก repo (โฟลเดอร์ scratchpad ของเครื่องผู้สร้าง แยกโฟลเดอร์ต่อชุดแพ็กเกจ) และไม่ได้ commit · ไฟล์นี้เก็บแค่ผลและตัวเลขที่วัดได้
+
+## สภาพแวดล้อมของ 6a
+
+| รายการ | ค่า |
+|---|---|
+| วันที่ | 2026-11-16 |
+| เครื่อง | macOS 27.2.1 arm64, RAM 36 GB |
+| Node | 26.13.1 (เครื่องนี้) และ 24.22.3 (`npx -y node@24`) |
+| pnpm | 12.21.0 (ตาม `packageManager`) และ 12.4.1 (ตัวที่ติดตั้งในเครื่อง ใช้เมื่อโฟลเดอร์ไม่มี `packageManager`) |
+| เบราว์เซอร์ | Google Chrome 157 (ทั้งแบบควบคุมผ่าน DevTools และ headless ผ่าน puppeteer-core) |
+| โมเดล | opencode Go endpoint ผ่าน shim, `OPENCODE_DEV_MODEL` = `deepseek-v4.1-flash` |
+
+**เวอร์ชันแพ็กเกจที่ใช้ทดลอง** (ตัวที่ไม่ได้ล็อกในเอกสารออกแบบ = รุ่นล่าสุดบน npm ณ วันที่ทดลอง)
+
+| แพ็กเกจ | เวอร์ชัน |
+|---|---|
+| `@langchain/core` / `@langchain/langgraph` / `langchain` | 1.4.1 / 1.7.4 / 1.6.6 |
+| `@langchain/ollama` / `@langchain/google` | 1.3.0 / 0.2.15 |
+| `@langchain/langgraph-cli` (มี `@langchain/langgraph-api` 1.7.2 มาด้วย) | 1.7.2 |
+| `@langchain/langgraph-checkpoint` | 1.2.2 |
+| `@langchain/langgraph-checkpoint-sqlite` (ดึง `better-sqlite3` 12.11.1) | 1.1.0 |
+| `@langchain/langgraph-sdk` / `@langchain/react` | 1.16.0 / 1.2.14 |
+| `@langchain/mcp-adapters` / `@modelcontextprotocol/sdk` | 2.0.3 / 1.32.2 |
+| `@langchain/textsplitters` | 1.0.2 |
+| `agentevals` (ดึง `openevals` 0.1.5, `@langchain/openai` 1.8.4) | 0.0.7 |
+| `next` / `react` / `react-dom` | 16.4.6 / 19.3.1 / 19.3.1 |
+| `typescript` / `tsx` / `zod` | 6.0.3 / 4.23.15 / 4.6.7 |
+
+## สรุปผล
+
+| ข้อ | ผล | สรุป |
+|---|---|---|
+| Step 2 usage hook กับ `ChatOllama` → shim (invoke + stream) | ✅ PASS | นับ token ได้ทั้ง 2 แบบ ทั้ง Node 26 และ 24 · ไม่ต้องแก้ hook |
+| Step 2 `ChatOllama` ในเครื่อง / Cloud และ `ChatGoogle` | ⏸ DEFERRED → 6b | ต้องใช้ key จริง |
+| langgraph-cli dev: import แบบไม่ใส่นามสกุล | ✅ PASS | |
+| langgraph-cli dev: อ่าน `env` จาก config ในโฟลเดอร์อื่น | ✅ PASS | path ใน config นับจากโฟลเดอร์ของ config |
+| langgraph-cli dev: `main` ไม่ถูกรันตอน import | ✅ PASS | |
+| langgraph-cli dev: Studio | 🟡 PARTIAL | Studio ต่อได้โดยไม่มี key และไม่เปิด tracing · ส่วนที่มี LangSmith key → 6b |
+| langgraph-cli dev: repo ที่ใช้ pnpm | ✅ PASS | ชื่อคำสั่งคือ `langgraphjs` ไม่ใช่ `langgraph` |
+| Next.js 16.4: re-export หน้า `"use client"` และ route handler | ✅ PASS | ค่า config ของ route (`dynamic`, `runtime`, `maxDuration`) re-export ไม่ได้ ต้องเขียนในไฟล์ `src/app/...` |
+| `useStream` ↔ langgraph dev server | ✅ PASS | |
+| `useStream` ↔ route handler ตาม Agent Streaming Protocol | ✅ PASS (ในเครื่อง) | ยังไม่ได้ทดสอบบน serverless จริง (ดูข้อเสี่ยงในแผนที่ 19) |
+| Agent Chat UI บนเว็บ ↔ `localhost:2024` | ✅ PASS (มีเงื่อนไข) | ต้องกด "อนุญาต" การเข้าถึงเครือข่ายในเครื่องของ Chrome · ถ้าไม่อนุญาตขึ้น `Failed to fetch` |
+| MCP stdio ด้วย `process.execPath` + `--import tsx` (macOS) | ✅ PASS | Windows อยู่ใน `internal/windows-checklist.md` |
+| better-sqlite3 + pnpm 12 + `allowBuilds` | ✅ PASS | ใช้ prebuilt ไม่ต้อง compile · เปลี่ยนรุ่น Node แล้วต้อง rebuild |
+| LangGraph `maxConcurrency` กับ `Send` | 🟡 PARTIAL | จำกัดได้จริงเมื่อค่า ≥ 2 · **ค่า 1 ทำให้งานหายเงียบๆ (bug ของ 1.7.4)** |
+| `InMemoryCache` + `cachePolicy` | ✅ PASS (มีเงื่อนไข) | state ที่เป็น messages ต้องใช้ `keyFunc` ไม่งั้นไม่เคยเจอ cache |
+| agentevals กับ `langchain` 1.6.6 | ✅ PASS | |
+| แบ่ง chunk ภาษาไทย | ✅ PASS | ได้ค่าที่แนะนำ 2 แบบ (ข้างล่าง) |
+| Node 24: `--env-file-if-exists` + `--import tsx` | ✅ PASS | |
+| Gemini (`getModel` ไม่ส่ง temperature, `GoogleGenerativeAIEmbeddings`) | ⏸ DEFERRED → 6b | ต้องใช้ key จริง |
+| hosting บท 147 + Postgres บน cloud | ✅ PASS (ค้นเอกสาร) | Vercel Hobby (สูงสุด 300 วินาที) + Neon Free · ยังไม่ได้ deploy จริง |
+| Step 6 `internal/windows-checklist.md` | ✅ เขียนแล้ว | ผู้ใช้เป็นคนรันบน Windows |
+
+นับรวม 6a: PASS 16 (มีเงื่อนไข 4 ข้อ) · PARTIAL 2 · FAIL 0 · DEFERRED 2 (ไม่นับ Step 6 ที่เป็นงานเขียน)
+
+## ทำแล้ว (6a)
+
+### Step 2: usage hook กับ LangChain จริง (เฉพาะ `ChatOllama` → shim)
+
+- วิธี: เปิด shim ด้วย `startShim()` ของ repo ในอีก process แล้วรัน `node --import tsx --import <repo>/internal/verify/usage-hook.ts` สคริปต์ที่เรียก `new ChatOllama({ baseUrl: <shim>, model, numCtx: 8192 })` ทั้ง `invoke` และ `stream`
+- ผล (`DN_USAGE_FILE` ต้องมีทั้ง input และ output มากกว่า 0):
+
+| Node | แบบ | `DN_USAGE_FILE` | `usage_metadata` ของ LangChain | เวลา |
+|---|---|---|---|---|
+| 26.13.1 | invoke | `{"input":48,"output":133}` | 48 / 133 | 5.4 วินาที |
+| 26.13.1 | stream (3 chunk) | `{"input":48,"output":150}` | 48 / 150 | 5.5 วินาที |
+| 24.22.3 | invoke | `{"input":48,"output":143}` | 48 / 143 | 4.9 วินาที |
+| 24.22.3 | stream | `{"input":48,"output":93}` | 48 / 93 | 4.7 วินาที |
+
+- ตัวเลขใน `DN_USAGE_FILE` ตรงกับ `usage_metadata` ทุกครั้ง · `ChatOllama` 1.3.0 ส่ง `stream: true` เสมอแม้เรียก `invoke` จึงผ่านทาง NDJSON ของ shim ทั้งคู่
+- **ไม่ต้องแก้ hook และไม่ได้เพิ่ม test**
+
+### langgraph-cli dev
+
+ทดลองในโฟลเดอร์ที่จัดเหมือน repo (`lessons/046-studio/example.ts` import `../../src/lib/model` แบบไม่ใส่นามสกุล, `.langgraph/langgraph.json` สร้างแยก, ติดตั้งด้วย pnpm 12.21.0, TypeScript 6.0.3)
+
+- **import ไม่ใส่นามสกุล:** ✅ ลงทะเบียน graph และรันผ่าน `POST /runs/wait` ได้คำตอบไทยใน 6.4 วินาที
+- **env จาก config ในโฟลเดอร์อื่น:** ✅ config `.langgraph/langgraph.json` ที่มี `"env": "../.env"` (หรือไฟล์ชื่ออื่น) อ่านค่าได้ ยืนยันด้วย graph ที่คืน `process.env` ตรงๆ ไม่ผ่านโมเดล
+  - path ใน `graphs` และ `env` นับจาก**โฟลเดอร์ของ config** เช่น `"../lessons/046-x/example.ts:graph"`
+  - `cwd` ของ graph ยังเป็นโฟลเดอร์ที่สั่งรัน (root) ไม่ใช่โฟลเดอร์ config
+  - ค่าใน `process.env` ที่มีอยู่แล้วชนะค่าในไฟล์ (cli ใช้ `dotenv.populate` แบบไม่ทับ)
+- **`main` ไม่ถูกรัน:** ✅ ไฟล์ที่มี `export async function main()` (ในนั้นเขียนไฟล์ marker และ `process.exit(42)`) ถูก import แล้วไม่มี marker ไม่มีข้อความ และ server ไม่ตาย
+- **Studio:** 🟡 เปิด `https://smith.langchain.com/studio?baseUrl=http://localhost:2024` โดยไม่ล็อกอินและไม่มี `LANGSMITH_API_KEY`:
+  - หน้า Studio โหลด เห็น graph (`__start__ → callModel → __end__`) และ input schema ขึ้นแถบเตือน "LangSmith API key is missing"
+  - ต้องอนุญาตการเข้าถึงเครือข่ายในเครื่องของ Chrome ก่อน ไม่งั้นขึ้น `Failed to initialize Studio … Failed to fetch`
+  - `LANGSMITH_TRACING=false` ตลอดการทดลอง
+  - ยังไม่ได้ส่งข้อความรันผ่านหน้า Studio และยังไม่ได้ทดสอบแบบมี key → 6b
+- **repo ที่ใช้ pnpm:** ✅ ติดตั้งและรันได้ด้วย pnpm strict layout · เปิด server ใช้ราว 2–3 วินาที ทั้ง Node 26 และ 24
+- **schema ของ graph กับ TypeScript 6.0.3:** ✅ `/assistants/{id}/schemas` คืน input schema ได้ แม้ langgraph-api ระบุ peer `typescript ^5.5.4`
+
+**ข้อที่แผนที่ 6 (`scripts/studio.ts`) ต้องรู้**
+- คำสั่งของแพ็กเกจชื่อ `langgraphjs` (bin → `dist/cli/cli.mjs`) · แพ็กเกจไม่มี `exports` จึงหา path ได้ด้วย `import.meta.resolve("@langchain/langgraph-cli/dist/cli/cli.mjs")` แล้วรัน `process.execPath <cli.mjs> dev --config .langgraph/langgraph.json --port 2024 --no-browser` (ทดลองแล้วใช้ได้ ไม่ผ่าน shell)
+- ต้องติดตั้ง `@langchain/langgraph-checkpoint` เป็น dependency ตรง ไม่งั้น server เตือน `Some LangGraph.js dependencies are not up to date … '@langchain/langgraph-checkpoint': { version: '0.0.0', required: '^1.2.0' }` (ใส่แล้วหาย)
+- cli เขียน `.gitignore` (บรรทัด `.langgraph_api`) และสร้างโฟลเดอร์ `.langgraph_api/` **ในโฟลเดอร์ของ config** ทุกครั้งที่ไฟล์ `.gitignore` ในโฟลเดอร์นั้นยังไม่มีคำว่า `.langgraph_api`
+  - config ใน `.langgraph/` ไม่มีปัญหา เพราะ `.langgraph/` อยู่ใน gitignore แล้ว
+  - บท 046 และ 108 ที่มี `langgraph.json` ในโฟลเดอร์บทจะเกิด `lessons/NNN-*/.gitignore` และ `.langgraph_api/` · ให้ commit `.gitignore` ที่มีบรรทัด `.langgraph_api` ไว้ในโฟลเดอร์บทนั้น และเพิ่ม `.langgraph_api/` ใน `.gitignore` ที่ root
+- ปิดการส่ง analytics ของ cli ได้ด้วย `LANGGRAPH_CLI_NO_ANALYTICS=1` (cli ส่ง log การใช้งานออกไปภายนอกถ้าไม่ปิด) · แนะนำให้ `scripts/studio.ts` ตั้งค่านี้ให้
+- Node 26 พิมพ์ `DeprecationWarning: module.register() is deprecated` ตอนเปิด server · Node 24 ไม่มี
+- peer warning ตอนติดตั้ง: `typescript` (ต้องการ ^5.5.4 ได้ 6.0.3) และ `@hono/node-server` ภายใน langgraph-api · ไม่กระทบการทำงาน
+
+### Next.js ~16.4: re-export หน้าเว็บและ route handler
+
+- โครงที่ทดลอง: `lessons/142-use-stream/page.tsx` (`"use client"`) · `src/app/lessons/142/page.tsx` มีบรรทัดเดียว `export { default } from "../../../../lessons/142-use-stream/page";` · route ของบท 147 อยู่ใน `lessons/147-deploy/*.ts` และ `src/app/api/lessons/147/threads/[threadId]/{commands,stream,state}/route.ts` re-export `POST`/`GET`
+- `next build` (Turbopack) ✅ ผ่าน ใช้เวลาราว 3 วินาที · typecheck ด้วย TypeScript 6.0.3 ผ่าน
+- ❗ ถ้า re-export ค่า config ของ route จะ build ไม่ผ่าน: `Next.js can't recognize the exported 'dynamic' field in route. It mustn't be reexported.` (เช่นเดียวกับ `runtime`) · ทางแก้: ไฟล์ใน `src/app/` re-export เฉพาะ handler แล้วเขียน `export const dynamic = "force-dynamic"`, `export const runtime = "nodejs"`, `export const maxDuration = 300` ในไฟล์นั้นเอง (ทดลองแล้ว build ผ่าน)
+- `next build` ครั้งแรกแก้ `tsconfig.json` เอง (เพิ่ม `.next/dev/types/**/*.ts` ใน `include`) และสร้าง `next-env.d.ts` · แผนที่ 19 ควรใส่ค่านี้ไว้ล่วงหน้าเพื่อไม่ให้ไฟล์ที่ commit เปลี่ยนตอนผู้เรียนรัน
+
+### `useStream` จาก `@langchain/react`
+
+ทดสอบในเบราว์เซอร์จริง (Chrome 157) กับ `next start -p 3200`
+
+- **↔ langgraph dev server (บท 142–145):** ✅ `useStream({ apiUrl: "http://localhost:2024", assistantId: "example" })` ส่งข้อความแล้วได้คำตอบไทยใน 7.3 วินาที · ข้าม origin จาก `localhost:3200` ไป `localhost:2024` ได้โดยไม่ต้องตั้ง CORS · request ที่เห็น: `POST /threads/{id}/commands` แล้ว `POST /threads/{id}/stream/events` 2 ครั้ง
+- **↔ route handler ของ Next.js ตาม Agent Streaming Protocol (บท 147):** ✅ ใช้ `new HttpAgentServerAdapter({ apiUrl, threadId, paths: { commands, stream, state } })` + `useStream({ transport })`
+  - ฝั่ง server ทำตามตัวอย่าง `js-next` ของ `langchain-ai/deployment-cookbook`: `/commands` รับ `run.start` แล้วเริ่ม `graph.streamEvents(input, { version: "v3", configurable: { thread_id, run_id } })` · เก็บ event ลง `StreamChannel` · `/stream` ส่ง event ที่ `matchesSubscription()` เป็น SSE (`id:`/`event: message`/`data:`) · `/state` คืน 404 เมื่อยังไม่มี checkpoint · ทั้งหมด import จาก `@langchain/langgraph/stream` และ `@langchain/core/messages` (โค้ด server ราว 60 บรรทัด)
+  - ได้คำตอบไทยใน 4.5–8.5 วินาที · รอบที่ 2 ใน thread เดียวกันจำข้อความแรกได้ (`MemorySaver`)
+- ข้อสังเกตสำหรับหน้าเว็บ: `stream.messages` เป็น `BaseMessage[]` และ `content` ของข้อความ AI มาเป็น array ของ content block (`[{"type":"text","text":"…"}]`) · ให้แสดงด้วย `m.text` (ทดลองแล้วได้ข้อความล้วน)
+
+### Agent Chat UI (บท 141)
+
+- เปิด `https://agentchat.vercel.app/?apiUrl=http://localhost:2024&assistantId=example`:
+  - ถ้าไม่อนุญาต: request ไป `localhost:2024` ค้าง (Chrome ถามสิทธิ์ `local-network-access`) หรือขึ้น `Error: Unable to connect to LangGraph server … Failed to fetch` (headless ปฏิเสธเอง)
+  - อนุญาตสิทธิ์ local network ให้ origin นั้นแล้ว: ✅ ส่งข้อความไทยได้คำตอบใน 7.1 วินาที
+  - ทดสอบการอนุญาตด้วย CDP (`Browser.setPermission`) แทนการกดปุ่มจริง · ยังไม่ได้ทดสอบ Safari/Firefox/Edge
+- **ทางเลือก (ถ้าเบราว์เซอร์ของผู้เรียนต่อไม่ได้):** รันเองในเครื่องตาม README ของ `langchain-ai/agent-chat-ui`: `npx create-agent-chat-app` หรือ `git clone https://github.com/langchain-ai/agent-chat-ui.git` → `pnpm install` → `pnpm dev` แล้วเปิด `http://localhost:3000` · ตั้ง `NEXT_PUBLIC_API_URL=http://localhost:2024` และ `NEXT_PUBLIC_ASSISTANT_ID=<ชื่อ graph>` ใน `.env` ของแอปนั้นเพื่อข้ามหน้าตั้งค่า · localhost → localhost จึงไม่ติดเรื่องสิทธิ์ (ยังไม่ได้รันทางนี้จริง)
+- **ทางที่เลือกสำหรับบท 141:** ใช้ตัวบนเว็บ · README บอกให้กด "อนุญาต" เมื่อเบราว์เซอร์ถามเรื่องเข้าถึงอุปกรณ์ในเครือข่าย และให้วิธีรันเองเป็นทางสำรอง
+
+### MCP แบบ stdio (macOS)
+
+- server ใช้ `McpServer` + `StdioServerTransport` จาก `@modelcontextprotocol/sdk` 1.32.2 · client ใช้ `MultiServerMCPClient` จาก `@langchain/mcp-adapters` 2.0.3 ด้วย `{ transport: "stdio", command: process.execPath, args: ["--import", "tsx", "src/shop/mcp-server.ts"] }`
+- ✅ `getTools()` 418 มิลลิวินาที (Node 26) / 300 มิลลิวินาที (Node 24) · เรียก tool ตรงได้ผลภาษาไทย · `ChatOllama.bindTools(tools)` ผ่าน shim เลือก tool และ args ถูก
+- ข้อควรรู้: ชื่อ tool ถูกเติมชื่อ server นำหน้า (`searchProducts` → `shop_searchProducts`) · `mcp-adapters` 2.x ใช้ `@modelcontextprotocol/client` 2.4.0 ภายใน แต่ต่อกับ server ที่เขียนด้วย SDK 1.32.2 ได้ · ฝั่ง server ห้ามพิมพ์ลง stdout (เป็นช่องของ protocol) ให้ใช้ `console.error`
+
+### better-sqlite3 + pnpm 12 + `allowBuilds`
+
+| pnpm | Node | ผล |
+|---|---|---|
+| 12.21.0 + `allowBuilds: { better-sqlite3: true }` | 26.13.1 | ✅ ติดตั้ง 4.9 วินาที ไม่มี "Ignored build scripts" · `SqliteSaver` จำ thread ข้ามการ invoke ได้ |
+| 12.21.0 + `allowBuilds` | 24.22.3 | ✅ ติดตั้ง 1.6 วินาที · `SqliteSaver` ทำงาน |
+| 12.4.1 + `allowBuilds` | 26.13.1 | ✅ โหลด `better-sqlite3` ได้ (SQLite 3.53.2) |
+| 12.21.0 ไม่มี `allowBuilds` | 26.13.1 | ❌ `ERR_PNPM_IGNORED_BUILDS … Ignored build scripts: better-sqlite3@12.11.1` (ยืนยันว่าต้องใส่) |
+
+- ใช้ไฟล์ prebuilt ไม่ได้ compile (มีแค่ `better_sqlite3.node`) · release 12.11.1 มี prebuilt ของ `node-v137` (Node 24) และ `node-v147` (Node 26) ครบ darwin/linux/win32 ทั้ง x64 และ arm64
+- ❗ ไฟล์ `.node` ผูกกับรุ่น Node: ติดตั้งด้วย Node 26 แล้วรันด้วย Node 24 ได้ error `NODE_MODULE_VERSION 147. This version of Node.js requires …` (และกลับกัน) · ทางแก้ `pnpm rebuild better-sqlite3` · README บท 073 ควรมีข้อนี้
+- `@langchain/langgraph-checkpoint-sqlite` 1.1.0 ล็อก `better-sqlite3 ^12.10.0` (ไม่ใช่ 13.x ที่เป็นรุ่นล่าสุด)
+
+### LangGraph: `maxConcurrency` กับ `Send`
+
+นับจำนวน node ที่รันพร้อมกันสูงสุด (peak) ด้วยตัวนับใน node
+
+| งาน | `maxConcurrency` | peak | ผลครบ | เวลา |
+|---|---|---|---|---|
+| 10 งาน หน่วง 200 ms | ไม่ตั้ง | 10 | 10/10 | 222 ms |
+| 10 งาน หน่วง 200 ms | 3 | 3 | 10/10 | 841 ms |
+| 20 งาน หน่วง 200 ms | 5 | 5 | 20/20 | 839 ms |
+| 6 งาน เรียกโมเดลจริงผ่าน shim | 2 | 2 | 6/6 | 10.9 วินาที |
+| 6 งาน หน่วง 100 ms | 2 / 3 | 2 / 3 | 6/6 | 325 / 226 ms |
+| **6 งาน หน่วง 100 ms** | **1** | 1 | **0/6 (รันแค่งานแรก)** | 116 ms |
+
+- ❗ **bug ของ `@langchain/langgraph` 1.7.4 (รุ่นล่าสุดตอนทดลอง):** `maxConcurrency: 1` เมื่อ superstep มีงานมากกว่า 1 งาน → รันงานแรกงานเดียวแล้วจบ ไม่มี error · กับ graph ที่มี 2 กิ่งขนานแบบ edge ธรรมดา `invoke` คืน `undefined` · เป็นเหมือนกันทั้ง Node 24 และ 26
+  - สาเหตุ: ลูปใน `_executeTasksWithRetry` ของ `pregel/runner.js` จบเมื่อ `executingTasksMap` ว่าง ซึ่งเกิดทันทีหลังงานแรกเสร็จเมื่อจำกัดไว้ที่ 1
+  - `Runnable.batch([...], { maxConcurrency: 1 })` ของ `@langchain/core` ไม่มีปัญหานี้ (peak 1 ผลครบ 6/6)
+- ทางที่เลือก: บทที่ใช้ `maxConcurrency` กับ graph (055, 059, 117) ใช้ค่า 2 ขึ้นไปเสมอ และไม่ยกตัวอย่างค่า 1 · ใส่ไว้ใน "จุดที่มักพลาด" ของบท 055 · ก่อนสร้างบทเหล่านั้นให้ลองซ้ำว่ารุ่นใหม่แก้แล้วหรือยัง
+- ไม่ต้องใช้ทางสำรองของเอกสารออกแบบ เพราะค่า ≥ 2 ทำงานตรงตามที่สอน
+
+### LangGraph: `InMemoryCache` + `cachePolicy`
+
+- `InMemoryCache` ต้อง import จาก `@langchain/langgraph-checkpoint` (`@langchain/langgraph` 1.7.4 ไม่ได้ re-export) · ลำดับบทเรียนบท 114 เขียนไว้ถูกแล้ว · pnpm ต้องติดตั้งแพ็กเกจนี้เป็น dependency ตรง
+
+| state | รอบ 1 | รอบ 2 (input เดิม) | รอบ 3 (input ใหม่) |
+|---|---|---|---|
+| `{ question: string }` + `cachePolicy: { ttl: 120 }` | 3,472 ms เรียกโมเดล 1 ครั้ง | **3 ms ไม่เรียกโมเดล** | 3,012 ms เรียก 1 ครั้ง |
+| `MessagesAnnotation` + `cachePolicy: { ttl: 120 }` (key ปกติ) | 3,063 ms เรียก 1 ครั้ง | ❌ 2,946 ms เรียกซ้ำ | – |
+| `MessagesAnnotation` + `keyFunc` ที่ใช้แค่ `type` กับ `text` ของข้อความ | 3,012 ms เรียก 1 ครั้ง | **3 ms ไม่เรียกโมเดล** | – |
+
+- สาเหตุที่ messages ไม่เจอ cache: reducer ใส่ `id` สุ่มให้ข้อความทุกครั้ง key ปกติจึงไม่ซ้ำ (ยืนยันด้วย node ที่ไม่เรียกโมเดล: ไม่ใส่ id → node รัน 2 ครั้ง · ใส่ id คงที่ → รัน 1 ครั้ง)
+- `keyFunc` ได้รับ argument เป็น array (`[input, ...]`) ไม่ใช่ input ตรงๆ
+- ทางที่เลือกสำหรับบท 114: ตัวอย่างหลักใช้ state ที่เป็นข้อความธรรมดา (`question`) · ถ้าใช้ messages ให้สอน `keyFunc` และอธิบายเรื่อง id
+
+### agentevals กับ `langchain` 1.6.6
+
+- ✅ ติดตั้ง `agentevals` 0.0.7 แล้ว pnpm ใช้ `langchain` 1.6.6 ตัวเดียวกัน (เป็นรุ่นล่าสุดอยู่แล้ว) · `pnpm peers check` ไม่มีปัญหา
+- `createAgent` ของ `langchain` 1.6.6 + `ChatOllama` (ผ่าน shim) + tool `getOrder`: ได้ข้อความ `human,ai,tool,ai` ใน 9.4 วินาที
+- `createTrajectoryMatchEvaluator` แบบ `strict` และ `superset` (`toolArgsMatchMode: "ignore"`) ได้ `score: true` · `createTrajectoryLLMAsJudge({ prompt: TRAJECTORY_ACCURACY_PROMPT, judge: <ChatOllama> })` ได้ `score: true` พร้อมเหตุผลใน 7.0 วินาที
+- ข้อสังเกต: agentevals ดึง `@langchain/openai` และ `openai` มาด้วย ทำให้ใน store มี `@langchain/core` 1.4.1 กับ `@langchain/langgraph` 1.7.4 สองชุด (ต่างกันที่ peer context) · ทดลองแล้วยังทำงานร่วมกันได้
+- judge เรียก structured output ของโมเดล · Ollama Cloud ไม่รองรับ JSON schema → ต้องลองใน 6b ว่า judge ใช้กับ Cloud ได้ไหม
+
+### แบ่ง chunk ภาษาไทย (`@langchain/textsplitters`)
+
+ทดลองกับเอกสารนโยบายคืนสินค้าสมมติ 1 หน้า (Markdown 2,150 ตัวอักษร มีหัวข้อ `#`/`##`/`###` ข้อความไทยเว้นวรรคระหว่างวลี วลีที่ยาวที่สุดไม่มีช่องว่าง 109 ตัวอักษร) · ตรวจว่าขอบ chunk ตรงกับขอบคำของ `Intl.Segmenter("th", { granularity: "word" })` หรือไม่
+
+| chunkSize / overlap | separators | chunk | ยาวสุด | ตัดกลางคำ |
+|---|---|---|---|---|
+| 100 / 20 | ค่าปกติ, markdown, หัวข้อก่อน (มีและไม่มี `""`) | 36 | 99 | 2 |
+| 200 / 40 | ค่าปกติ `["\n\n","\n"," ",""]` | 20 | 187 | 0 |
+| 200 / 40 | `["\n## ", "\n### ", "\n\n", "\n", " ", ""]` | 22 | 187 | 0 |
+| 300 / 50 | หัวข้อก่อน | 10 | 259 | 0 |
+| 500 / 80 | หัวข้อก่อน | 6 | 464 | 0 |
+| 60, 100, 200 | หัวข้อก่อน + subclass ที่ตัดคำด้วย `Intl.Segmenter` | 54 / 36 / 22 | 59 / 97 / 187 | 0 |
+
+- การตัดกลางคำเกิดเมื่อวลีที่ไม่มีช่องว่างยาวกว่า `chunkSize` เท่านั้น
+- ❗ เอา `""` ออกจาก separators **ไม่ช่วย**: เมื่อตัดด้วย `" "` แล้วยังยาวเกิน splitter เรียกตัวเองด้วย separators ว่าง แล้วตกไปตัดทีละตัวอักษรอยู่ดี (`splitOnSeparator(undefined)` → `split("")`)
+- **ค่าที่แนะนำสำหรับบท 094:**
+  1. separators `["\n## ", "\n### ", "\n\n", "\n", " ", ""]` ให้ chunk เริ่มที่หัวข้อ + `chunkSize` ≥ 200 (`chunkOverlap` ราว 20%) · เอกสารร้านใน `src/shop/` ต้องเว้นวรรคระหว่างวลีไม่ให้วลีใดยาวเกิน 150 ตัวอักษร
+  2. (ส่วนเสริมของบท) subclass ที่ override `splitOnSeparator` ให้ separator ว่างตัดด้วย `Intl.Segmenter("th", { granularity: "word" })` แทนตัวอักษร ไม่ตัดกลางคำแม้ chunk เล็กถึง 60 ตัวอักษร · ไม่ต้องติดตั้งแพ็กเกจเพิ่ม (ใช้ ICU ที่มากับ Node)
+
+### Node 24: `--env-file-if-exists` + `--import tsx`
+
+- ✅ `npx -y node@24 --env-file-if-exists=.env --import tsx scripts/run-cli.ts <fixture>` (Node 24.22.3 ที่ root ของ repo): ไฟล์ทดลองที่ import แบบไม่ใส่นามสกุลและ import `src/lib/env.ts` รันได้ · พิมพ์ภาษาไทย (รวมสระอำ) ถูก · อ่านค่าจาก `.env` ได้ (พิมพ์แค่ "ตั้งแล้ว") · `EnvError` ทำงาน
+- ไม่มี `.env`: ยังรันได้ แต่ Node (ทั้ง 24 และ 26) พิมพ์ `.env not found. Continuing without it.` ลง stderr · README บท 002 ควรบอกว่าข้อความนี้ไม่ใช่ error
+- `pnpm test` ของ repo ทั้งชุดผ่านบน Node 24.22.3 (10 ไฟล์ 109 test)
+- `.env` แบบ CRLF อ่านค่าได้ถูกทั้ง `--env-file` และ `process.loadEnvFile` · `.env` ที่มี BOM ทำให้ชื่อตัวแปรตัวแรกกลายเป็น `﻿FOO` (ยืนยันเหตุผลที่ `.env.example` ขึ้นต้นด้วยคอมเมนต์ และที่ `pnpm preflight` ตรวจ BOM)
+
+### hosting ของบท 147 และ Postgres บน cloud (ค้นจากเอกสารทางการ 2026-11-16)
+
+| ตัวเลือก | แผนฟรี | Node runtime | streaming | เวลาสูงสุดต่อ request | env / Postgres | ผล |
+|---|---|---|---|---|---|---|
+| **Vercel Hobby** | ฟรี | Node เต็มรูป (Fluid compute) | ได้ (เวลา stream นับรวมใน max duration) | **300 วินาที** (ค่าเริ่มต้นและสูงสุดของ Hobby) | ตั้ง env ได้ · ต่อ Postgres ภายนอก (Neon) ด้วย `DATABASE_URL` | **เลือก** |
+| Netlify Functions | ไม่ได้ตรวจรายละเอียดแผนฟรี | ไม่ได้ตรวจ | streamed payload สูงสุด 20 MB | synchronous 60 วินาที ปรับไม่ได้ (background 15 นาที แต่ไม่ใช่ response ที่ stream) | ไม่ได้ตรวจ | ไม่เลือก (เวลาสั้นกว่า Vercel 5 เท่า) |
+| Render Free web service | 750 ชั่วโมง/เดือน | server Node ที่รันต่อเนื่อง | หน้า free ไม่ได้ระบุ | หน้า free ไม่ได้ระบุ | Postgres ฟรีหมดอายุ 30 วัน | สำรอง ถ้า 300 วินาทีไม่พอ (หลับหลังว่าง 15 นาที ตื่นราว 1 นาที) · ต้องตรวจเพิ่มก่อนใช้ |
+
+- ตัวเลขของ Vercel Hobby (หน้า Functions Limits อัปเดต 2026-08-24 และหน้า Hobby Plan อัปเดต 2026-11-12): RAM 2 GB / 1 vCPU · Active CPU 4 CPU-ชั่วโมง/เดือน · Provisioned Memory 360 GB-ชั่วโมง/เดือน · Function Invocations 1,000,000/เดือน · เกินโควต้าต้องรอ 30 วัน · route ต้องประกาศ `export const maxDuration = 300` ในไฟล์ `src/app/...` เอง
+- Postgres ที่เลือก: **Neon Free** (หน้า Plans อัปเดต 2026-11-12): $0 · 1 GB ต่อโปรเจกต์ (รวม 20 GB) · 100 CU-ชั่วโมงต่อโปรเจกต์ต่อเดือน · 100 โปรเจกต์ · compute หลับหลังว่าง 5 นาทีและปิดไม่ได้ (request แรกหลังหลับช้าลง) · หน้านั้นไม่ได้พูดถึงการลบฐานข้อมูลที่ไม่ได้ใช้
+- ตัวเทียบ: Supabase Free 500 MB, ได้ 2 โปรเจกต์, **หยุดโปรเจกต์หลังไม่มีการใช้ 1 สัปดาห์** · Render Postgres ฟรีหมดอายุ 30 วัน → ไม่เหมาะกับผู้เรียนที่ทำบท 146–147 ห่างกันหลายสัปดาห์
+- ยังไม่ได้ deploy จริง (ต้องใช้บัญชีของผู้ใช้) → แผนที่ 19 ต้องทดสอบตามหัวข้อ "ข้อเสี่ยงที่แผนที่ 19 ต้องทดสอบ" ข้างล่าง
+
+## ผลที่กระทบแผนหลัง
+
+- **แผนที่ 2:** usage hook ใช้กับ `ChatOllama` ได้ไม่ต้องแก้
+- **แผนที่ 6 (`scripts/studio.ts`):** รัน `process.execPath <@langchain/langgraph-cli/dist/cli/cli.mjs> dev --config .langgraph/langgraph.json --no-browser` · ตั้ง `LANGGRAPH_CLI_NO_ANALYTICS=1` · ติดตั้ง `@langchain/langgraph-checkpoint` เป็น dependency ตรง · path ใน config นับจาก `.langgraph/` · บท 046/108 ที่มี `langgraph.json` ของตัวเองต้อง commit `.gitignore` (บรรทัด `.langgraph_api`) ในโฟลเดอร์บท และเพิ่ม `.langgraph_api/` ที่ root · README บอกให้กด "อนุญาต" เมื่อ Chrome ถามเรื่องเครือข่ายในเครื่องตอนเปิด Studio
+- **แผนที่ 7 (บท 055, 059):** `maxConcurrency` บน graph ใช้ ≥ 2 เสมอ (bug ค่า 1) · ลองซ้ำก่อนสร้างว่ารุ่นใหม่แก้แล้วหรือยัง
+- **แผนที่ 9 (บท 073):** `allowBuilds` ของ `better-sqlite3` ใช้ได้ · README บอกวิธี `pnpm rebuild better-sqlite3` เมื่อเปลี่ยนรุ่น Node
+- **แผนที่ 12 (บท 094):** ใช้ separators และ `chunkSize` ตามค่าที่แนะนำ · เขียนเอกสารร้านให้มีช่องว่างระหว่างวลี
+- **แผนที่ 14 (บท 114):** ตัวอย่าง cache ใช้ state ข้อความธรรมดา หรือสอน `keyFunc` กับ messages
+- **แผนที่ 16 (บท 127):** ใช้ `@modelcontextprotocol/sdk` 1.x ฝั่ง server ได้ · ชื่อ tool มีชื่อ server นำหน้า · server ห้ามพิมพ์ลง stdout
+- **แผนที่ 18 (บท 138):** agentevals 0.0.7 ใช้ได้ · ต้องลอง judge กับ Gemini/Ollama Cloud ใน 6b
+- **แผนที่ 19:**
+  - ค่า config ของ route ต้องเขียนในไฟล์ `src/app/...` ไม่ re-export · ใส่ `.next/dev/types/**/*.ts` ใน `tsconfig.json` ล่วงหน้า
+  - หน้าเว็บแสดงข้อความด้วย `m.text`
+  - บท 141 ใช้ Agent Chat UI บนเว็บ + ขั้นตอนกดอนุญาต · มีวิธีรันเองเป็นทางสำรอง
+  - บท 147 ใช้ Vercel Hobby + Neon Free · โค้ด protocol ฝั่ง server ราว 60 บรรทัด ควรอยู่ใน `src/lib/` ให้ผู้เรียนเขียนแค่ graph
+  - ทดสอบ deploy จริงตามหัวข้อถัดไปก่อนเขียนบท 147
+
+### ข้อเสี่ยงที่แผนที่ 19 ต้องทดสอบ (deploy จริง)
+
+`useStream` + `HttpAgentServerAdapter` ส่ง `/commands` แล้วเปิด `/stream` เป็น request แยก (ในเครื่องเห็น `/stream` 2 ครั้งต่อ 1 ข้อความ) · โค้ดแบบ cookbook เริ่ม run ใน `/commands` แล้วเก็บ event ไว้ในหน่วยความจำของ process · บน serverless request ทั้งสองอาจไปคนละ instance และ run อาจหยุดหลัง `/commands` ตอบกลับ · cookbook เองบอกว่าบน serverless ต้องมีที่เก็บ session/replay ร่วม (เช่น Redis) ซึ่งเกินแผนฟรีที่เลือก
+
+ขั้นทดสอบในแผนที่ 19:
+1. deploy ตัวอย่างบท 147 ขึ้น Vercel Hobby + Neon (checkpointer เป็น Postgres)
+2. ส่งข้อความ 10 รอบจากเบราว์เซอร์ และ agent ที่วนหลายรอบ (ราว 60–120 วินาที) ดูว่าได้คำตอบครบทุกครั้ง
+3. ถ้าไม่ครบ ลองให้ `/commands` แค่บันทึก input ลง Postgres แล้วให้ `/stream` เป็นตัวรัน graph ใน request ของตัวเอง
+4. ถ้ายังไม่ได้ ใช้ทางสำรองของเอกสารออกแบบข้อ 5.8: เปลี่ยนเฉพาะฝั่ง client ของบท 147 และ 152 เป็น client SSE สั้นๆ บน `graph.stream` (request เดียว) โดยยังใช้ hosting ฟรี, Next.js ใน repo และไม่ใช้ LangSmith Cloud · บท 142–145 ไม่กระทบ · ถ้า 300 วินาทีไม่พอ ให้จำกัดจำนวนรอบของ agent
+
+---
+
+## เลื่อนไปท้ายสุด (6b)
+
+ทำหลังสร้างบทครบตามภาคผนวกแก้แผน แล้วตามด้วยการตรวจบท 001–006 กับ provider จริง (`pnpm verify … --provider google --repeat 3`, `--provider ollama-cloud --repeat 3`, `--provider ollama` 1 รอบ) · ผลทุกข้อเขียนต่อท้ายไฟล์นี้ในหัวข้อ "ผล 6b" พร้อมวันที่ เวอร์ชัน ตัวเลขที่วัด และ PASS/FAIL
+
+**กติกาเดิม:** ไม่ผ่านแล้วเอกสารออกแบบมีทางสำรอง (ข้อ 5.8) → ใช้ทางสำรองและบันทึก · ไม่มีทางสำรอง → หยุดแล้วรายงานผู้ใช้ ห้ามเดาทางแก้ · โค้ดทดลองอยู่นอก repo · ห้ามพิมพ์ค่า key
+
+### ก่อนเริ่ม 6b: ของที่ต้องมี
+
+- [ ] `.env` ที่ root มี (ถามผู้ใช้และรอจนได้ครบ):
+  - `GOOGLE_API_KEY` ที่เปิด billing แล้ว (จาก Google AI Studio)
+  - `VERIFY_OLLAMA_CLOUD_API_KEY` จากบัญชีที่มีเครดิต Ollama Cloud
+  - `LANGSMITH_API_KEY`
+- [ ] Ollama ในเครื่องเปิดอยู่ (เครื่องนี้ Ollama 0.40.16) และ `ollama signin` ได้
+- [ ] หลังเลือกโมเดลใน Step 3–4 แล้ว เพิ่มใน `.env` ของผู้สอน: `VERIFY_OLLAMA_CLOUD_MODEL`, `VERIFY_OLLAMA_LOCAL_MODEL`, `VERIFY_OLLAMA_LOCAL_NUM_CTX` (ตัวแปรที่ `internal/verify/runner.ts` ต้องใช้) และ `GOOGLE_MODEL`
+- [ ] โฟลเดอร์ทดลองใหม่นอก repo ติดตั้ง `@langchain/core@1.4.1`, `@langchain/ollama@1.3.0`, `@langchain/google@0.2.15`, `@langchain/google-genai` (รุ่นล่าสุด), `langchain@1.6.6`, `zod`, `tsx@4.23.15`
+
+### 6b-1 (Step 1): ทดสอบ endpoint ของ provider ด้วย `fetch` อย่างเดียว
+
+- [ ] **Google:**
+  - `GET https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000` หัว `x-goog-api-key: <GOOGLE_API_KEY>` → 200 และมีโมเดลที่จะเลือกในรูป `models/<ชื่อ>`
+  - `POST https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent` body `{ "contents": [{ "role": "user", "parts": [{ "text": "ตอบภาษาไทยสั้นๆ ร้านค้าออนไลน์คืออะไร" }] }] }` → ข้อความไทยใน `candidates[0].content.parts[].text` (ข้าม part ที่ `thought: true`) และมี `usageMetadata`
+- [ ] **Ollama Cloud (ยิงตรง):**
+  - `GET https://ollama.com/api/tags` หัว `Authorization: Bearer <VERIFY_OLLAMA_CLOUD_API_KEY>` → 200 และมีรายการ `models[].name` · **ต้องยืนยันว่าใช้กับ Cloud ได้จริง เพราะ `pnpm preflight` (`scripts/lib/doctor-checks.ts`) ใช้ endpoint นี้** และดูว่า key ผิดได้ 401 จริงไหม
+  - `POST https://ollama.com/api/chat` body `{ "model": "<ชื่อ>", "messages": [{ "role": "user", "content": "…" }], "stream": false }` → ภาษาไทยใน `message.content` และมี `prompt_eval_count`/`eval_count`
+  - ถ้า `/api/tags` ของ Cloud ใช้ไม่ได้: แก้ `checkOllama` ใน `scripts/lib/doctor-checks.ts` (Task 3) ไปใช้ endpoint ที่ใช้ได้และ**ไม่เสีย token** แก้ test ใน `doctor-checks.test.ts` ให้ตรง แล้วบันทึก
+- [ ] **Ollama ในเครื่อง:** `GET http://localhost:11434/api/tags` และ `POST http://localhost:11434/api/chat` (body เดียวกัน ใส่ `"options": { "num_ctx": 8192 }`) → ภาษาไทย
+- [ ] **Ollama Cloud ผ่าน `ollama signin`:** `ollama signin` → `ollama pull <ชื่อ>:cloud` → `GET http://localhost:11434/api/tags` ต้องมี `<ชื่อ>:cloud` (ยืนยันข้อความ "ให้รัน ollama pull …" ของ `pnpm preflight`) → `POST http://localhost:11434/api/chat` ด้วยชื่อ `:cloud` ได้ภาษาไทย
+- เกณฑ์ผ่าน: ได้คำตอบภาษาไทยครบ 3 ทาง (Google, Ollama Cloud, Ollama ในเครื่อง)
+
+### 6b-2 (ส่วนที่เหลือของ Step 2): usage hook กับ provider จริง
+
+- [ ] ในโฟลเดอร์ทดลอง รันสคริปต์ที่เรียก `invoke` และ `stream` ของแต่ละแบบ โดยใส่ `--import <repo>/internal/verify/usage-hook.ts` และตั้ง `DN_USAGE_FILE=<ไฟล์ชั่วคราว>`:
+  - `ChatOllama` ในเครื่อง (`baseUrl: "http://localhost:11434"`, `numCtx`)
+  - `ChatOllama` ไป Cloud (`baseUrl: "https://ollama.com"`, `headers: { Authorization: "Bearer …" }`)
+  - `ChatGoogle` จาก `@langchain/google` (ไม่ส่ง `temperature`)
+- [ ] (ไม่บังคับ) `embedQuery` ของ Ollama (`/api/embed`) และ Google เพื่อดูว่า hook นับ token ขาเข้าได้ไหม
+- เกณฑ์ผ่าน: `DN_USAGE_FILE` มี token มากกว่า 0 ทุกกรณี (ตัวอย่างรูปแบบผลจาก 6a: `{"input":48,"output":133}`)
+- ถ้าไม่ผ่าน: แก้ `internal/verify/usage-hook.ts` / `usage.ts` ให้รองรับรูปแบบที่ได้จริง (เช่น host ของ Google ที่ `@langchain/google` เรียกอาจไม่ใช่ `generativelanguage.googleapis.com` หรือ body เป็น SSE รูปแบบอื่น) แล้วเพิ่ม test ใน `internal/verify/usage.test.ts` ด้วยตัวอย่าง body จริง (ลบข้อมูลส่วนตัวออก) · รัน `pnpm test` และ `pnpm check`
+
+### 6b-3 (Step 3): เลือกโมเดล
+
+- [ ] เลือกผู้สมัครจากรายการที่มีตอนนั้น (ดูจาก `/v1beta/models` และ `https://ollama.com/api/tags`):
+  - Gemini 2–3 รุ่นที่อยู่ในแผนฟรีและตั้ง `thinkingLevel` ต่ำได้
+  - Ollama Cloud 2–3 รุ่น
+  - Ollama ในเครื่อง 2–3 รุ่นที่ขนาดพอสำหรับเครื่อง RAM 16 GB และเรียก tool ได้ (ปิดหรือลดการคิดได้)
+- [ ] สคริปต์ทดสอบ 5 รอบต่อรุ่น แต่ละรอบทำ:
+  1. ถามคำถามภาษาไทยเรื่องร้านค้า → คำตอบเป็นภาษาไทย
+  2. `bindTools` 2 tool: `searchProducts({ query })` และ `getOrder({ orderId })` · ถามเรื่องสินค้า 1 ครั้งและเรื่องคำสั่งซื้อ 1 ครั้ง → ต้องเลือก tool ถูก (`ChatOllama` ไม่รองรับ `tool_choice` จึงวัดจากคำถามล้วน)
+  3. `withStructuredOutput` ด้วย zod schema 3 field (เช่น `{ name: string, price: number, inStock: boolean }`) · **Ollama Cloud ใช้ `{ method: "functionCalling" }`** (ยืนยันข้อในลำดับบทเรียนว่า method นี้ใช้ได้จริง) → ผ่าน `schema.parse`
+  4. จับเวลาแต่ละรอบ
+- [ ] บันทึกตารางในไฟล์นี้: รุ่น · tool ถูก x/5 · structured ถูก x/5 · ภาษาไทย x/5 · เวลาเฉลี่ยต่อรอบ · ราคา/token (Cloud) · thinking ที่ตั้ง
+- เกณฑ์เลือก: tool 5/5 และ structured 5/5 · ผ่านหลายรุ่นเลือกรุ่นที่เร็วกว่า · Cloud ดูราคาต่อ token ประกอบ
+- เกณฑ์ผ่าน: มีรุ่นที่ผ่านอย่างน้อย 1 รุ่นในแต่ละทาง (Google, Ollama Cloud, ในเครื่อง) · **ทางไหนไม่มีรุ่นผ่านเลย ให้หยุดแล้วรายงานผู้ใช้**
+
+### 6b-4 (Step 4): หาค่า `OLLAMA_NUM_CTX`
+
+- [ ] รันโมเดลในเครื่องที่เลือกด้วย `num_ctx` 8192, 16384 และ 32768 (ส่ง prompt ยาวพอให้ใช้ context จริง เช่น เอกสารร้าน + ประวัติแชท)
+- [ ] ดู RAM จาก `ollama ps` (คอลัมน์ SIZE) และความเร็ว (token/วินาที จาก `eval_count / eval_duration`)
+- เลือกค่าสูงสุดที่โมเดลรวม context ใช้ RAM ไม่เกิน 10 GB (เหลือที่ให้ระบบบนเครื่อง 16 GB) · บันทึกตาราง num_ctx · RAM · token/วินาที
+
+### 6b-5 (ข้อ Gemini ของ Step 5)
+
+- [ ] `getModel` ที่ไม่ส่ง `temperature` ให้ Gemini ต้องไม่มี warning: `src/lib/model.ts` ยังไม่มีจนถึงแผนที่ 4 · ตอน 6b ถ้ายังไม่มีให้ทดสอบ `initChatModel` ของ `langchain` 1.6.6 กับ provider google และ `new ChatGoogle({ model })` โดยไม่ส่ง `temperature` · ดู stderr ว่าไม่มี warning/error ทั้ง `invoke` และ `stream` · ถ้ามี `model.ts` แล้วให้ทดสอบ `getModel()` ตรงๆ
+- [ ] `GoogleGenerativeAIEmbeddings` จาก `@langchain/google-genai` ใช้กับ key จาก AI Studio ได้: `embedQuery("นโยบายคืนสินค้า")` และ `embedDocuments([...])` ได้ vector ความยาวมากกว่า 0 · จดชื่อโมเดล embedding ที่ใช้และขนาด vector
+
+### 6b-6 ข้อที่ 6a ทำได้ไม่ครบ
+
+- [ ] **Studio แบบมี key:** ใส่ `LANGSMITH_API_KEY` ใน `.env` และ `LANGSMITH_TRACING=false` → เปิด langgraph dev ตามวิธีใน 6a → เปิดลิงก์ Studio ในเบราว์เซอร์ที่ล็อกอิน LangSmith แล้ว กดอนุญาตเครือข่ายในเครื่อง → แถบเตือน "API key is missing" ต้องหาย · ส่งข้อความผ่าน Studio แล้วได้คำตอบ · ใน LangSmith ไม่มี trace ใหม่ (เพราะไม่เปิด tracing)
+- [ ] **agentevals judge กับ provider จริง:** `createTrajectoryLLMAsJudge({ judge: <ChatGoogle> })` และ `judge: <ChatOllama ไป Cloud>` · ถ้า Cloud ใช้ไม่ได้เพราะไม่รองรับ JSON schema ให้บันทึก และให้บท 138 ใช้ judge เป็น Google (หรือ `functionCalling` ถ้า openevals เปิดให้ตั้งได้)
+- [ ] **`maxConcurrency` กับ Ollama Cloud:** graph ที่ `Send` 6 งานด้วย `maxConcurrency: 3` ไป Cloud (รับพร้อมกัน 3 request) ต้องไม่เจอ 429 · peak = 3
+
+### 6b-7 (Step 7): ใส่ค่าที่เลือกลง `.env.example`
+
+- [ ] แทน `CHANGE_ME` ของ `OLLAMA_MODEL` (รุ่นในเครื่องที่เลือก), `GOOGLE_MODEL`, `OLLAMA_NUM_CTX` (ค่าจาก 6b-4)
+- [ ] ใส่ชื่อโมเดล Cloud ที่แนะนำ (ต่อท้าย `:cloud` สำหรับทาง `ollama signin` และชื่อเปล่าสำหรับทางยิงตรง) ในบล็อกคอมเมนต์ Ollama Cloud
+- [ ] ใส่ชื่อโมเดลที่เลือกใน README บท 003–005 ตามที่ Task 7 กำหนด
+- [ ] Run: `pnpm check` → ผ่าน และ `.env.example` ไม่มี `CHANGE_ME` เหลือ (`grep CHANGE_ME .env.example` ไม่เจอ)
+- [ ] Commit (ในเครื่องเท่านั้น ห้าม push): `git add internal/spikes.md .env.example` (+ ไฟล์ hook/test/doctor ถ้าแก้) แล้ว `git commit -m "docs: record spike results and chosen models"`
