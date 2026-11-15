@@ -1,6 +1,6 @@
 import type { Lesson } from "../../scripts/lib/lessons";
 
-export type VerifyProvider = "google" | "ollama-cloud" | "ollama";
+export type VerifyProvider = "google" | "ollama-cloud" | "ollama" | "opencode-dev";
 export interface TokenUsage { input: number; output: number }
 export interface RunResult {
   lesson: string; file: string; provider: VerifyProvider; attempt: number;

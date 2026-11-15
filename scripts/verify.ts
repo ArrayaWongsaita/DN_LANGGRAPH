@@ -2,13 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { listLessons, normalizeLessonNumber, runnableFiles } from "./lib/lessons";
-import { providerEnv, filesForProvider, runOnce } from "../internal/verify/runner";
+import { startShim } from "../internal/dev/opencode-shim";
+import { opencodeDevConfig, providerEnv, filesForProvider, runOnce } from "../internal/verify/runner";
 import { addUsage } from "../internal/verify/usage";
 import type { LessonChecks, TokenUsage, VerifyProvider } from "../internal/verify/types";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const providers: VerifyProvider[] = ["google", "ollama-cloud", "ollama"];
-const usageText = "ใช้งาน: pnpm verify [NNN | NNN-NNN] --provider <google|ollama-cloud|ollama> [--repeat N] [--examples-only]";
+const providers: VerifyProvider[] = ["google", "ollama-cloud", "ollama", "opencode-dev"];
+const usageText = "ใช้งาน: pnpm verify [NNN | NNN-NNN] --provider <google|ollama-cloud|ollama|opencode-dev> [--repeat N] [--examples-only]";
 
 function fail(message: string): never {
   console.error(message);
@@ -46,7 +47,20 @@ if (range !== undefined) {
   hi = Number(to);
 }
 
-const env = providerEnv(provider, process.env);
+let shim: Awaited<ReturnType<typeof startShim>> | undefined;
+let env: Record<string, string>;
+try {
+  const base: Record<string, string | undefined> = { ...process.env };
+  if (provider === "opencode-dev") {
+    const { apiKey, model } = opencodeDevConfig(base);
+    shim = await startShim({ apiKey, model });
+    base.DN_OPENCODE_SHIM_URL = shim.baseUrl;
+  }
+  env = providerEnv(provider, base);
+} catch (e) {
+  await shim?.close();
+  fail(e instanceof Error ? e.message : String(e));
+}
 const lessons = listLessons(path.join(root, "lessons")).filter((l) => Number(l.number) >= lo && Number(l.number) <= hi);
 
 let passed = 0;
@@ -91,6 +105,7 @@ for (const lesson of lessons) {
   }
 }
 
+await shim?.close();
 console.log(`\nสรุป: ผ่าน ${passed} ไม่ผ่าน ${failed}`);
 console.log(`token ที่ใช้: ขาเข้า ${total?.input ?? 0} ขาออก ${total?.output ?? 0}`);
 process.exit(failed > 0 ? 1 : 0);

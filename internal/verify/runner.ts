@@ -10,6 +10,12 @@ function need(base: Record<string, string | undefined>, name: string): string {
   return v;
 }
 
+export function opencodeDevConfig(base: Record<string, string | undefined>): { apiKey: string; model: string } {
+  const missing = ["OPENCODE_API_KEY", "OPENCODE_DEV_MODEL"].filter((n) => !base[n]);
+  if (missing.length > 0) throw new Error(`ยังไม่ได้ตั้งค่า ${missing.join(", ")} ในไฟล์ .env ของผู้สอน (ดู .env.example)`);
+  return { apiKey: base.OPENCODE_API_KEY as string, model: base.OPENCODE_DEV_MODEL as string };
+}
+
 export function providerEnv(provider: VerifyProvider, base: Record<string, string | undefined>): Record<string, string> {
   switch (provider) {
     case "google":
@@ -20,6 +26,12 @@ export function providerEnv(provider: VerifyProvider, base: Record<string, strin
         OLLAMA_BASE_URL: "https://ollama.com",
         OLLAMA_API_KEY: need(base, "VERIFY_OLLAMA_CLOUD_API_KEY"),
         OLLAMA_MODEL: need(base, "VERIFY_OLLAMA_CLOUD_MODEL"),
+      };
+    case "opencode-dev":
+      return {
+        LLM_PROVIDER: "ollama",
+        OLLAMA_BASE_URL: need(base, "DN_OPENCODE_SHIM_URL"),
+        OLLAMA_MODEL: opencodeDevConfig(base).model,
       };
     case "ollama":
       return {

@@ -5,7 +5,7 @@ import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { filesForProvider, providerEnv, runOnce } from "./runner";
+import { filesForProvider, opencodeDevConfig, providerEnv, runOnce } from "./runner";
 import type { Lesson } from "./types";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -34,10 +34,21 @@ describe("providerEnv", () => {
   it("ollama local", () =>
     expect(providerEnv("ollama", { VERIFY_OLLAMA_LOCAL_MODEL: "m", VERIFY_OLLAMA_LOCAL_NUM_CTX: "8192" }))
       .toEqual({ LLM_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://localhost:11434", OLLAMA_API_KEY: "", OLLAMA_MODEL: "m", OLLAMA_NUM_CTX: "8192" }));
+  it("opencode-dev", () =>
+    expect(providerEnv("opencode-dev", { DN_OPENCODE_SHIM_URL: "http://127.0.0.1:1", OPENCODE_API_KEY: "a", OPENCODE_DEV_MODEL: "m" }))
+      .toEqual({ LLM_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://127.0.0.1:1", OLLAMA_MODEL: "m" }));
+  it("opencode-dev ขาด env ให้ข้อความไทย", () => {
+    expect(() => opencodeDevConfig({})).toThrow(/ยังไม่ได้ตั้งค่า OPENCODE_API_KEY, OPENCODE_DEV_MODEL/);
+    expect(opencodeDevConfig({ OPENCODE_API_KEY: "a", OPENCODE_DEV_MODEL: "m" })).toEqual({ apiKey: "a", model: "m" });
+  });
   it("ขาดตัวแปร", () => expect(() => providerEnv("ollama", {})).toThrow("VERIFY_OLLAMA_LOCAL_MODEL"));
 });
 
 describe("filesForProvider", () => {
+  it("opencode-dev เท่ากับ ollama", () => {
+    const files = ["example.google", "example.ollama", "exercise-1"];
+    expect(filesForProvider(files, "opencode-dev")).toEqual(filesForProvider(files, "ollama"));
+  });
   it("ollama-cloud", () =>
     expect(filesForProvider(["example.google", "example.ollama", "exercise-1"], "ollama-cloud")).toEqual(["example.ollama", "exercise-1"]));
   it("google", () =>
