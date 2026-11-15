@@ -1078,3 +1078,15 @@ git add README.md && git commit -m "docs: add main README for section 1"
 - `internal/windows-checklist.md` ที่ผู้ใช้ต้องรันบน Windows
 
 จากนั้นถามว่ารูปแบบบทใช้ได้ไหม ก่อนเขียนแผนที่ 2
+
+---
+
+## ภาคผนวกแก้แผน (2026-11-16): ทดสอบระหว่างสร้างด้วย opencode
+
+ผู้ใช้สั่งให้ใช้ opencode (Go endpoint, โมเดล `deepseek-v4.1-flash` เท่านั้น) ทดสอบทุกอย่างระหว่างสร้าง แล้วค่อยทดสอบ Google และ Ollama หลังทำเสร็จทั้งหมด ผลที่มีต่อแผนนี้:
+
+- **งาน 5b (เพิ่ม):** ตัวแปลง Ollama→opencode สำหรับผู้สอนเท่านั้น (`internal/dev/opencode-shim.ts`) และ provider `opencode-dev` ใน `pnpm verify` ให้บท `X.ollama.ts` รันกับ deepseek ได้โดยไม่แก้บท · ตัวแปลงไม่ใช่ส่วนของคอร์ส
+- **งาน 6 แยกสอง:** 6a ทำตอนนี้ (ทดลองที่ไม่ต้องใช้ Google/Ollama Cloud) · 6b เลื่อนไปท้ายสุด (endpoint ของ Google/Cloud, เลือกโมเดล, `NUM_CTX`, embeddings, ค่าโมเดลใน `.env.example`)
+- **งาน 7–9:** ตรวจกับ `opencode-dev` ×3 ก่อน · ตรวจ Google ×3, Ollama Cloud ×3 และในเครื่อง ×1 ตามเกณฑ์เดิมในเอกสารออกแบบ ทำท้ายสุดพร้อมงาน 6b
+- เกณฑ์ผ่านของเอกสารออกแบบไม่เปลี่ยน แค่เลื่อนลำดับ · ไฟล์ `X.google.ts` ยังไม่ได้รันจริงจนกว่าจะถึงขั้นท้ายสุด
+- ข้อมูลที่ opencode ต้องใช้: base `https://opencode.ai/inference/go/openai/v1/chat/completions` ต้องส่งหัว `x-opencode-session` ทุกครั้ง · key อยู่ใน `.env` เป็น `OPENCODE_API_KEY` และชื่อโมเดลเป็น `OPENCODE_DEV_MODEL`
