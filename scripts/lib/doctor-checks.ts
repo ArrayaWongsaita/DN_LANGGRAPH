@@ -58,7 +58,25 @@ function checkEnvFile(deps: DoctorDeps): CheckResult {
   }
   if (content === null) return fail(".env", "ยังไม่มีไฟล์ .env ให้คัดลอกจาก .env.example", "002");
   if (content.startsWith("﻿")) return fail(".env", "ไฟล์มี BOM นำหน้า: บันทึกใหม่เป็น UTF-8 แบบไม่มี BOM", "002");
+  const dup = duplicateKeys(content);
+  if (dup.length > 0) {
+    const first = dup[0];
+    const names = dup.join(", ");
+    return fail(".env", `มีตัวแปรซ้ำหลายบรรทัด: ${names} (บรรทัดหลังสุดจะชนะ ทำให้ค่าที่ใส่ไว้ก่อนหน้าไม่ถูกใช้) ให้เหลือบรรทัดเดียว`, ENV_LESSON[first as keyof typeof ENV_LESSON] ?? "002");
+  }
   return pass(".env");
+}
+
+function duplicateKeys(content: string): string[] {
+  const seen = new Set<string>();
+  const dup = new Set<string>();
+  for (const line of content.split(/\r?\n/)) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line);
+    if (!m) continue;
+    if (seen.has(m[1])) dup.add(m[1]);
+    seen.add(m[1]);
+  }
+  return [...dup];
 }
 
 async function checkGoogle(deps: DoctorDeps): Promise<CheckResult> {
