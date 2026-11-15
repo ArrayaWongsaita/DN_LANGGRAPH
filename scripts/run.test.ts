@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runModule } from "./run";
 
@@ -20,7 +20,7 @@ beforeAll(() => {
   envFixture = path.join(dir, "env-fixture.ts");
   fs.writeFileSync(withMain, 'export function main() { (globalThis as any).__dnRan = "main"; }\n');
   fs.writeFileSync(topLevel, '(globalThis as any).__dnRan = "top";\n');
-  const envUrl = path.join(repoRoot, "src", "lib", "env").split(path.sep).join("/");
+  const envUrl = pathToFileURL(path.join(repoRoot, "src", "lib", "env.ts")).href;
   fs.writeFileSync(envFixture, `import { env } from ${JSON.stringify(envUrl)};\nenv("GOOGLE_API_KEY");\n`);
 });
 afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -29,7 +29,7 @@ describe("runModule", () => {
   it("เรียก main() ถ้ามี", async () => { await runModule(withMain); expect(g.__dnRan).toBe("main"); });
   it("ไม่มี main → รันโค้ดบนสุดของไฟล์", async () => { await runModule(topLevel); expect(g.__dnRan).toBe("top"); });
   it("run-cli: EnvError → ข้อความไทยบรรทัดเดียว exit 1", () => {
-    const r = spawnSync(process.execPath, ["--import", "tsx", "scripts/run-cli.ts", envFixture], { cwd: repoRoot, env: { PATH: process.env.PATH }, encoding: "utf8" });
+    const r = spawnSync(process.execPath, ["--import", "tsx", "scripts/run-cli.ts", envFixture], { cwd: repoRoot, env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot }, encoding: "utf8" });
     expect(r.status).toBe(1);
     expect(r.stderr.trim()).toBe("ยังไม่ได้ตั้งค่า GOOGLE_API_KEY ในไฟล์ .env (ดูวิธีตั้งในบท 005)");
   });

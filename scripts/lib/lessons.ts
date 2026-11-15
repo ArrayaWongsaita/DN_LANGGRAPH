@@ -58,3 +58,7 @@ export function resolveLessonFile(lesson: Lesson, name?: string): Resolved {
 export function countPointers(source: string): number {
   return source.split("👉").length - 1;
 }
+
+export function pointerWarning(count: number): string {
+  return `⚠️  ไฟล์นี้ยังมี 👉 อีก ${count} จุด ผลที่ได้อาจยังไม่ครบ`;
+}
