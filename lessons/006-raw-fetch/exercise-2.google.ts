@@ -1,15 +1,10 @@
-// แบบฝึกหัด 2: พิมพ์จำนวน token จาก response ดิบ
+// เฉลยแบบฝึกหัด 2: พิมพ์จำนวน token จาก response ดิบ
 //
 // โจทย์: ส่งคำถามแล้วพิมพ์ 2 บรรทัดนี้ (N คือตัวเลขจริง)
 //   token ขาเข้า: N
 //   token ขาออก: N
-//
-// แนวทาง:
-// 1. Gemini บอกจำนวน token ไว้ใน response ที่ usageMetadata: promptTokenCount (ขาเข้า)
-//    ส่วนขาออกคือ candidatesTokenCount + thoughtsTokenCount (token ที่ใช้คิดก็นับเป็นขาออก)
-// 2. จุด 👉: อ่านจาก data (ฟิลด์ที่ไม่มีให้ถือเป็น 0)
-// 3. ตอนนี้ไฟล์พิมพ์ response ดิบทั้งก้อนให้ดูรูปร่างก่อน ลบบรรทัดนั้นเมื่อรู้แล้วว่าฟิลด์อยู่ตรงไหน
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 006 exercise-2.google
+// รัน: pnpm lesson 006 exercise-2.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง
 // (await ที่บนสุดของไฟล์ใช้ได้ เพราะโปรเจกต์เป็น ES module)
 import { env } from "../../src/lib/env";
 
@@ -32,10 +27,13 @@ if (!res.ok) {
   throw new Error(`Gemini ตอบ ${res.status}: ${await res.text()}`);
 }
 const data = (await res.json()) as GeminiResponse;
-console.log(JSON.stringify(data, null, 2)); // ดูรูปร่าง response ดิบ ลบบรรทัดนี้เมื่อเสร็จ
 
-// 👉 อ่านจาก data.usageMetadata แทนค่าชั่วคราว (ขาออก = candidatesTokenCount + thoughtsTokenCount) ค่าชั่วคราว 0 ทั้งสองตัว
-const inputTokens = 0;
-const outputTokens = 0;
+// เฉลย: ขาเข้าคือ promptTokenCount
+// ขาออกคือ candidatesTokenCount + thoughtsTokenCount เพราะโมเดลแบบคิดก่อนตอบใช้ token กับการคิดด้วย
+// และ token ที่ใช้คิดก็นับเป็นขาออกเช่นเดียวกับ eval_count ของ Ollama
+// ทำไมใส่ ?? 0: แต่ละฟิลด์อาจไม่มีมา (เช่นโมเดลที่ไม่คิดจะไม่มี thoughtsTokenCount) ถ้าไม่ใส่ผลบวกจะเป็น NaN
+const usage = data.usageMetadata;
+const inputTokens = usage?.promptTokenCount ?? 0;
+const outputTokens = (usage?.candidatesTokenCount ?? 0) + (usage?.thoughtsTokenCount ?? 0);
 console.log(`token ขาเข้า: ${inputTokens}`);
 console.log(`token ขาออก: ${outputTokens}`);

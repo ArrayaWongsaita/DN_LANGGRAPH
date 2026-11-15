@@ -1,16 +1,10 @@
-// แบบฝึกหัด 3 ⭐: ห่อการเรียกเป็นฟังก์ชัน ask แล้วถามคำถามเดิม 3 รอบ
+// เฉลยแบบฝึกหัด 3 ⭐: ห่อการเรียกเป็นฟังก์ชัน ask แล้วถามคำถามเดิม 3 รอบ
 //
 // โจทย์: เขียน ask(question) ที่ส่งคำถามไป Ollama แล้วคืน { text, inputTokens, outputTokens }
-// จากนั้น main ถามคำถามเดิม 3 รอบ ทีละรอบต่อกัน (ไม่ยิงพร้อมกัน) พิมพ์รอบละ 2 บรรทัด:
-//   ครั้งที่ 1: <คำตอบ>
-//   (token <ขาเข้า>→<ขาออก>)
-// คำตอบของแต่ละรอบอาจไม่เหมือนกัน เหมือนที่เรียนในบท 001 ไม่ต้องกังวล
-//
-// แนวทาง:
-// 1. ย้ายโค้ด fetch จาก exercise-1 และ exercise-2 มาไว้ในตัว ask
-// 2. จุด 👉 ที่ 1: เขียนตัว ask
-// 3. จุด 👉 ที่ 2: เขียนลูป 3 รอบใน main ด้วย for และ await ในลูป
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 006 exercise-3.ollama
+// จากนั้น main ถามคำถามเดิม 3 รอบ ทีละรอบต่อกัน (ไม่ยิงพร้อมกัน) พิมพ์รอบละ 2 บรรทัด
+// รัน: pnpm lesson 006 exercise-3.ollama
+import { env, optionalEnv } from "../../src/lib/env";
+
 const QUESTION = "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง";
 
 export interface OllamaChatResponse {
@@ -25,15 +19,40 @@ interface Answer {
   outputTokens: number;
 }
 
-// 👉 เขียนตัว ask: สร้าง headers (ใส่ Authorization ถ้ามี OLLAMA_API_KEY), fetch, ตรวจ res.ok, อ่าน JSON
-function ask(question: string): Promise<Answer> {
-  // ค่าชั่วคราว ลบเมื่อเขียนเสร็จ (เพิ่ม import env, optionalEnv ที่หัวไฟล์ด้วย)
-  return Promise.resolve({ text: `(ยังไม่ได้เขียน ask) ${question}`, inputTokens: 0, outputTokens: 0 });
+// เฉลยจุดที่ 1: ห่อโค้ดจากข้อ 1 และ 2 เป็นฟังก์ชันเดียว จะได้เรียกซ้ำได้โดยไม่ต้องคัดลอกโค้ด
+async function ask(question: string): Promise<Answer> {
+  // สร้าง headers ในฟังก์ชัน เพราะ key อ่านจาก .env ตอนเรียก ไม่ใช่ตอน import ไฟล์
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const apiKey = optionalEnv("OLLAMA_API_KEY");
+  if (apiKey !== undefined) headers.Authorization = `Bearer ${apiKey}`;
+
+  const res = await fetch(`${env("OLLAMA_BASE_URL")}/api/chat`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: env("OLLAMA_MODEL"),
+      messages: [{ role: "user", content: question }],
+      stream: false,
+    }),
+  });
+  // fetch ไม่ throw เมื่อได้ 4xx/5xx จึงต้องตรวจ res.ok เอง ไม่งั้นจะอ่าน JSON ของ error เป็นคำตอบ
+  if (!res.ok) {
+    throw new Error(`Ollama ตอบ ${res.status}: ${await res.text()}`);
+  }
+  const data = (await res.json()) as OllamaChatResponse;
+  return {
+    text: data.message.content,
+    inputTokens: data.prompt_eval_count ?? 0,
+    outputTokens: data.eval_count ?? 0,
+  };
 }
 
 export async function main(): Promise<void> {
-  // 👉 วนถาม 3 รอบ (i = 1, 2, 3) แล้วพิมพ์ 2 บรรทัดต่อรอบตามรูปแบบในโจทย์
-  const first = await ask(QUESTION);
-  console.log(`ครั้งที่ 1: ${first.text}`);
-  console.log(`(token ${first.inputTokens}→${first.outputTokens})`);
+  // เฉลยจุดที่ 2: for + await ในลูปทำให้ถามทีละรอบต่อกัน
+  // ทำไมไม่ใช้ Promise.all: ยิงพร้อมกันจะชนโควต้า/ขีดจำกัดของ provider ง่าย และลำดับผลลัพธ์ที่พิมพ์ก็ไม่แน่นอน
+  for (let i = 1; i <= 3; i++) {
+    const answer = await ask(QUESTION);
+    console.log(`ครั้งที่ ${i}: ${answer.text}`);
+    console.log(`(token ${answer.inputTokens}→${answer.outputTokens})`);
+  }
 }

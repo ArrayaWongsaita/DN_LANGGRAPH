@@ -1,13 +1,8 @@
-// แบบฝึกหัด 1: เติม body แล้วดึงคำตอบออกจาก response เอง
+// เฉลยแบบฝึกหัด 1: เติม body แล้วดึงคำตอบออกจาก response เอง
 //
 // โจทย์: ส่งคำถาม "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง" ไปที่ Ollama
 // แล้วพิมพ์ `คำตอบ: ...` (ข้อความคำตอบอย่างเดียว ไม่ใช่ JSON ทั้งก้อน)
-//
-// แนวทาง:
-// 1. เปิดดู example.ollama.ts ข้างๆ ดูว่า body หน้าตาอย่างไร
-// 2. จุด 👉 ที่ 1: เติม body ให้มี model, messages (1 ข้อความ role "user" ใช้ตัวแปร QUESTION) และ stream: false
-// 3. จุด 👉 ที่ 2: เปลี่ยนค่าชั่วคราวของ answer เป็นข้อความคำตอบจาก data (ดู interface OllamaChatResponse)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 006 exercise-1.ollama
+// รัน: pnpm lesson 006 exercise-1.ollama
 import { env, optionalEnv } from "../../src/lib/env";
 
 const QUESTION = "แนะนำของขวัญราคาไม่เกิน 500 บาทให้เพื่อนที่ชอบกาแฟ 1 อย่าง";
@@ -22,18 +17,17 @@ const headers: Record<string, string> = { "Content-Type": "application/json" };
 const apiKey = optionalEnv("OLLAMA_API_KEY");
 if (apiKey !== undefined) headers.Authorization = `Bearer ${apiKey}`;
 
-// 👉 เติม messages และ stream ให้ body สมบูรณ์ (ตอนนี้มีแค่ model)
+// เฉลยจุดที่ 1: body ต้องมี 3 อย่าง
+// - model: บอกว่าจะให้โมเดลตัวไหนตอบ
+// - messages: ประวัติสนทนา โมเดลจำครั้งก่อนไม่ได้ จึงส่งคำถามของเราเป็นข้อความ role "user"
+// - stream: false: ขอให้ตอบกลับทีเดียว ถ้าไม่ใส่ Ollama จะส่งเป็นชิ้นๆ ต่อเนื่องซึ่ง res.json() อ่านไม่ได้
 const body: Record<string, unknown> = {
   model: env("OLLAMA_MODEL"),
+  messages: [{ role: "user", content: QUESTION }],
+  stream: false,
 };
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้ส่งคำขอที่ยังไม่สมบูรณ์ (ไม่เสีย token) ลบทิ้งได้เมื่อเติม body เสร็จ
-  if (!("messages" in body)) {
-    console.log(`👉 ยังไม่ได้เติม messages ใน body ให้ใส่คำถามนี้: ${QUESTION}`);
-    return;
-  }
-
   const res = await fetch(`${env("OLLAMA_BASE_URL")}/api/chat`, {
     method: "POST",
     headers,
@@ -44,7 +38,7 @@ export async function main(): Promise<void> {
   }
   const data = (await res.json()) as OllamaChatResponse;
 
-  // 👉 ตอนนี้ answer เป็น JSON ทั้งก้อน เปลี่ยนให้เหลือแค่ข้อความคำตอบ
-  const answer = JSON.stringify(data);
+  // เฉลยจุดที่ 2: ข้อความคำตอบอยู่ที่ message.content ของ Ollama (ไม่ใช่ JSON ทั้งก้อน)
+  const answer = data.message.content;
   console.log(`คำตอบ: ${answer}`);
 }
