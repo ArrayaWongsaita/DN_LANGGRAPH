@@ -1,0 +1,48 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { countPointers, findLesson, listLessons, normalizeLessonNumber, resolveLessonFile, runnableFiles } from "./lessons";
+
+let dir: string;
+beforeAll(() => {
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), "dn-lessons-"));
+  const make = (d: string, files: string[]) => {
+    fs.mkdirSync(path.join(dir, d));
+    for (const f of files) fs.writeFileSync(path.join(dir, d, f), "");
+  };
+  make("006-raw-fetch", ["README.md", "example.ollama.ts", "example.google.ts", "exercise-1.ollama.ts", "exercise-1.google.ts", "helper.test.ts"]);
+  make("002-setup-project", ["example.ts", "exercise-1.ts"]);
+  make("appendix-a-more-providers", []);
+  fs.writeFileSync(path.join(dir, "notes.md"), "");
+});
+afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+describe("lessons", () => {
+  it("normalizeLessonNumber", () => {
+    expect(normalizeLessonNumber("7")).toBe("007");
+    expect(normalizeLessonNumber("07")).toBe("007");
+    expect(normalizeLessonNumber("152")).toBe("152");
+    for (const bad of ["0", "000", "abc", "1000", "", "6a"]) expect(normalizeLessonNumber(bad)).toBeNull();
+  });
+  it("listLessons เอาเฉพาะโฟลเดอร์ NNN-slug เรียงตามเลข", () =>
+    expect(listLessons(dir).map((l) => l.number)).toEqual(["002", "006"]));
+  it("ไม่มีโฟลเดอร์ lessons → []", () => expect(listLessons(path.join(dir, "ไม่มี"))).toEqual([]));
+  it("findLesson รับ 6", () => expect(findLesson(dir, "6")?.slug).toBe("raw-fetch"));
+  it("runnableFiles ไม่เอา README และ .test.ts", () =>
+    expect(runnableFiles(findLesson(dir, "006")!)).toEqual(["example.google", "example.ollama", "exercise-1.google", "exercise-1.ollama"]));
+  it("ไม่ระบุไฟล์ → example.ts", () =>
+    expect(resolveLessonFile(findLesson(dir, "002")!)).toEqual({ ok: true, file: path.join(dir, "002-setup-project", "example.ts") }));
+  it("ไม่มี example.ts → บอกให้เลือก", () => {
+    const r = resolveLessonFile(findLesson(dir, "006")!);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toBe("บท 006 มีไฟล์ให้เลือก: example.google, example.ollama, exercise-1.google, exercise-1.ollama\nตัวอย่าง: pnpm lesson 006 example.google");
+  });
+  it("ชื่อไฟล์มี .ts ก็หาเจอ", () => expect(resolveLessonFile(findLesson(dir, "006")!, "exercise-1.google.ts").ok).toBe(true));
+  it("ชื่อไฟล์ไม่มีจริง", () => {
+    const r = resolveLessonFile(findLesson(dir, "002")!, "exercise-9");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toBe("บท 002 ไม่มีไฟล์ exercise-9.ts มีไฟล์ให้เลือก: example, exercise-1");
+  });
+  it("countPointers", () => expect(countPointers("// 👉 a\nconst x = 1; // 👉 b\n")).toBe(2));
+});
