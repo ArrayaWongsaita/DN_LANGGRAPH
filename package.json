@@ -1,0 +1,25 @@
+{
+  "name": "dn-langgraph",
+  "private": true,
+  "type": "module",
+  "description": "DN_LANGGRAPH: คอร์สสอน LangGraph.js สำหรับคนที่เขียน TypeScript เป็น",
+  "engines": { "node": ">=24" },
+  "packageManager": "pnpm@12.21.0",
+  "scripts": {
+    "lesson": "tsx scripts/lesson.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "check": "tsx scripts/check.ts && tsc --noEmit && eslint .",
+    "verify": "node --env-file-if-exists=.env --import tsx scripts/verify.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "eslint": "^10.15.0",
+    "tsx": "~4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "~8.72.2",
+    "vitest": "~5.1.0"
+  }
+}

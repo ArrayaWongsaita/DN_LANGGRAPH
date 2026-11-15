@@ -1,0 +1,4 @@
+# Packages whose build scripts pnpm may run, so `pnpm install` never prints "Ignored build scripts".
+# `esbuild` is needed by tsx and vitest (it downloads its platform binary in a postinstall script).
+allowBuilds:
+  esbuild: true
