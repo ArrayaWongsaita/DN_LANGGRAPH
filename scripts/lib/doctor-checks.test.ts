@@ -1,7 +1,9 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { formatResults, runDoctor, type DoctorDeps } from "./doctor-checks";
 
 const KEY = "AIza" + "FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
+const CLOUD_KEY = "oc_sk" + "_FAKEFAKEFAKEFAKEFAKE";
 const BOM = "﻿";
 const okEnv = {
   GOOGLE_API_KEY: KEY,
@@ -10,12 +12,14 @@ const okEnv = {
   OLLAMA_MODEL: "qwen-test",
 };
 
-interface FakeOptions { google?: number; googleModels?: string[]; ollamaThrows?: boolean; ollamaModels?: string[]; cloud?: number; googleThrows?: boolean }
+interface FakeOptions { google?: number; googleModels?: string[]; ollamaThrows?: boolean; ollamaModels?: string[]; cloud?: number; googleThrows?: boolean; calls?: { url: string; headers: Record<string, string> }[] }
 
 function fakeFetch(o: FakeOptions = {}): typeof fetch {
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
-  return ((input: string | URL | Request): Promise<Response> => {
+  return ((input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const headers = ((typeof input === "object" && !(input instanceof URL) ? input.headers : undefined) ?? init?.headers ?? {}) as Record<string, string>;
+    o.calls?.push({ url, headers });
     return Promise.resolve(respond(url));
   });
   function respond(url: string): Response {
@@ -67,6 +71,40 @@ describe("runDoctor", () => {
     expect(g.ok).toBe(false);
     expect(formatResults(r)).not.toContain(KEY);
   });
+  it("Google: key อยู่ใน header ไม่อยู่ใน URL", async () => {
+    const calls: NonNullable<FakeOptions["calls"]> = [];
+    await runDoctor(okDeps({ fetch: fakeFetch({ calls }) }));
+    const g = calls.find((c) => c.url.includes("generativelanguage"))!;
+    expect(g.headers["x-goog-api-key"]).toBe(KEY);
+    expect(g.url).not.toContain(KEY);
+  });
+  it("Ollama Cloud: key อยู่ใน header Authorization ไม่อยู่ใน URL", async () => {
+    const calls: NonNullable<FakeOptions["calls"]> = [];
+    await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: "https://ollama.com", OLLAMA_API_KEY: CLOUD_KEY }, fetch: fakeFetch({ calls }) }));
+    const c = calls.find((x) => x.url.endsWith("/api/tags"))!;
+    expect(c.headers.Authorization).toBe(`Bearer ${CLOUD_KEY}`);
+    expect(c.url).not.toContain(CLOUD_KEY);
+  });
+  it(".env มีตัวแปรซ้ำ → ❌ บอกชื่อตัวแปรและบท", async () => {
+    const r = await runDoctor(okDeps({ readEnvFile: () => "OLLAMA_API_KEY=abc\nGOOGLE_API_KEY=x\nOLLAMA_API_KEY=\n" }));
+    const e = r[2];
+    expect(e).toMatchObject({ ok: false, lesson: "004" });
+    expect(e.detail).toContain("OLLAMA_API_KEY");
+    expect(e.detail).not.toContain("abc");
+  });
+  it(".env ที่ไม่ซ้ำ (บรรทัด # ไม่นับ) → ผ่าน", async () => {
+    const r = await runDoctor(okDeps({ readEnvFile: () => "# OLLAMA_API_KEY=\nOLLAMA_API_KEY=abc\n" }));
+    expect(r[2].ok).toBe(true);
+  });
+  it(".env.example บรรทัดแรกเป็น comment (ปลอดภัยจาก BOM)", () => {
+    const text = fs.readFileSync(new URL("../../.env.example", import.meta.url), "utf8");
+    expect(text.startsWith("#")).toBe(true);
+  });
+  it(".env.example ไม่มีตัวแปรซ้ำ (ทั้งบรรทัดจริงและที่ comment ไว้)", () => {
+    const text = fs.readFileSync(new URL("../../.env.example", import.meta.url), "utf8");
+    const keys = [...text.matchAll(/^#?\s*([A-Z][A-Z0-9_]+)=/gm)].map((m) => m[1]);
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
+  });
   it("Google ไม่มีโมเดลที่ตั้งไว้ → ❌ บท 005", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ googleModels: ["other"] }) }));
     expect(r.find((x) => x.lesson === "005")?.ok).toBe(false);
@@ -90,6 +128,15 @@ describe("runDoctor", () => {
   it("Ollama Cloud key ผิด → ❌ บท 004", async () => {
     const r = await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: "https://ollama.com", OLLAMA_API_KEY: "bad" }, fetch: fakeFetch({ cloud: 401 }) }));
     expect(r.find((x) => x.lesson === "004")?.ok).toBe(false);
+  });
+  it("Cloud 401 และ network ล้ม → ไม่พิมพ์ key", async () => {
+    const env = { ...okEnv, OLLAMA_BASE_URL: "https://ollama.com", OLLAMA_API_KEY: CLOUD_KEY };
+    const r401 = await runDoctor(okDeps({ env, fetch: fakeFetch({ cloud: 401 }) }));
+    expect(formatResults(r401)).not.toContain(CLOUD_KEY);
+    const down = await runDoctor(okDeps({ env, fetch: fakeFetch({ ollamaThrows: true, googleThrows: true }) }));
+    const text = formatResults(down);
+    expect(text).not.toContain(CLOUD_KEY);
+    expect(text).not.toContain(KEY);
   });
   it("env ผิดรูปแบบ → ❌ ไม่ throw", async () => {
     const r = await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: "localhost" } }));
