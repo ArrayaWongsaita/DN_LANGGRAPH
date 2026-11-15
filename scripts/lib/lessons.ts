@@ -56,7 +56,7 @@ export function resolveLessonFile(lesson: Lesson, name?: string): Resolved {
 }
 
 export function countPointers(source: string): number {
-  return source.split("👉").length - 1;
+  return source.match(/\/\/\s*👉/g)?.length ?? 0;
 }
 
 export function pointerWarning(count: number): string {

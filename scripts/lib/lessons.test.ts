@@ -46,6 +46,9 @@ describe("lessons", () => {
     if (!r.ok) expect(r.message).toBe("บท 002 ไม่มีไฟล์ exercise-9.ts มีไฟล์ให้เลือก: example, exercise-1");
   });
   it("countPointers", () => expect(countPointers("// 👉 a\nconst x = 1; // 👉 b\n")).toBe(2));
+  it("countPointers ไม่นับ 👉 ในข้อความ guard หรือหัวไฟล์", () =>
+    expect(countPointers('// แนวทาง 👉 ดูข้างล่าง\nconsole.log("👉 ต้องเติมก่อน");\nconst x = 1; // 👉 เติมตรงนี้\n')).toBe(1));
+  it("countPointers: เฉลยที่ไม่มี // 👉 → 0", () => expect(countPointers('const x = 1;\nconsole.log("👉 x");\n')).toBe(0));
   it("ไม่มีไฟล์ให้รัน", () => {
     const r = resolveLessonFile(findLesson(dir, "009")!);
     expect(r).toEqual({ ok: false, message: "บท 009 ไม่มีไฟล์ให้รัน อ่าน README.md ของบทนี้" });
