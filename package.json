@@ -9,6 +9,7 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "lesson": "tsx scripts/lesson.ts",
+    "renumber": "tsx scripts/renumber.ts",
     "preflight": "tsx scripts/doctor.ts",
     "check": "tsx scripts/check.ts && tsc --noEmit && eslint .",
     "verify": "node --env-file-if-exists=.env --import tsx scripts/verify.ts",
