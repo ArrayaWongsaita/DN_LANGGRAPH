@@ -50,22 +50,22 @@ pnpm verify 001-006 --provider opencode-dev --repeat 3
 - แยกเป็น `types.ts` (ชนิดข้อมูลกับป้ายไทย), `products.ts`, `customers.ts`, `orders.ts` และ `reset.ts` ไม่มี `index.ts` บทจึง import จากไฟล์ที่ใช้ตรงๆ เช่น `import { getOrder } from "../../src/shop/orders"`
 - ข้อมูลตั้งต้นอยู่ในหน่วยความจำของโมดูล (ไม่มีฐานข้อมูล) ฟังก์ชันที่คืนข้อมูลคืน **สำเนา** ด้วย `structuredClone` ผู้เรียนแก้ผลลัพธ์ได้โดยไม่ทำข้อมูลกลางเสีย
 - `resetShop()` คืนทั้งสินค้าและคำสั่งซื้อเป็นชุดตั้งต้น ใช้เมื่อรันซ้ำหรือใน test (`products.test.ts`, `orders.test.ts`) ไม่ได้ใช้ในบท
-- `getOrder(orderId, customerId)` ต้องได้ทั้งรหัสคำสั่งซื้อและรหัสลูกค้า คืน `undefined` ทั้งกรณีไม่มีคำสั่งซื้อนั้นและกรณีเป็นของลูกค้าคนอื่น (ไม่บอกว่ามีอยู่จริง) · ตัดช่องว่างหัวท้ายและไม่สนตัวพิมพ์เล็กใหญ่ · รหัสลูกค้าในบทมาจากระบบหรือค่าคงที่ของบท ห้ามให้โมเดลเลือกเจ้าของ ไม่งั้นโมเดลจะขอดูคำสั่งซื้อของคนอื่นได้
+- `getOrder(orderId, customerId)` ต้องได้ทั้งรหัสคำสั่งซื้อและรหัสลูกค้า คืน `undefined` ทั้งกรณีไม่มีคำสั่งซื้อนั้นและกรณีเป็นของลูกค้าคนอื่น (ไม่บอกว่ามีอยู่จริง) · รหัสคำสั่งซื้อตัดช่องว่างหัวท้ายและไม่สนตัวพิมพ์เล็กใหญ่ ส่วนรหัสลูกค้าเทียบตามที่ให้มาตรงๆ (การปรับ `getCustomer`/`listOrders` ให้ normalize เหมือนกันเป็นงาน data layer ของแผน 4) · รหัสลูกค้าในบทมาจากระบบหรือค่าคงที่ของบท ห้ามให้โมเดลเลือกเจ้าของ ไม่งั้นโมเดลจะขอดูคำสั่งซื้อของคนอื่นได้
 - `searchProducts` ค้นแบบ substring: แยก keyword ด้วยช่องว่าง ทุกคำต้องปรากฏในชื่อ + tags + ป้ายหมวด (ไม่ค้นใน `description` และไม่ใช่ fuzzy) · `keyword`, `category`, `maxPrice` ที่เป็น `null` หรือ `undefined` แปลว่าไม่กรอง field นั้น
 - **ห้ามคัดลอกข้อมูลสินค้าหรือคำสั่งซื้อลงในบท** ให้เรียกฟังก์ชันของ `src/shop` หรือสร้างข้อความจากผลของฟังก์ชัน ไม่งั้นราคาและสถานะในบทจะค้างเมื่อข้อมูลกลางเปลี่ยน
 
 ### zod
 
 - zod `~4.6.7` และ import แบบ `import * as z from "zod"` (`z.config`, `z.locales.th`, `z.prettifyError`, `z.toJSONSchema` อยู่บน namespace นี้)
-- ข้อความ error ของ zod ต้องเป็นภาษาไทย: ไฟล์ที่พิมพ์ error เรียก `z.config(z.locales.th())` ครั้งเดียวหลัง import รวมถึงไฟล์ schema ที่ใช้ร่วมกัน (เช่น `lessons/020-json-and-zod/search-filter.ts`) · ถ้าลืม ข้อความจะเป็นภาษาอังกฤษและไม่ตรงกับ "ผลที่ควรเห็น"
+- ข้อความ error ของ zod ต้องเป็นภาษาไทย: ใช้กับทุกไฟล์ที่รันได้และพิมพ์ error จาก zod (รวมถึงไฟล์ schema ที่ใช้ร่วมกัน) โดยเรียก `z.config(z.locales.th())` ครั้งเดียวหลัง import · ถ้าลืม ข้อความจะเป็นภาษาอังกฤษและไม่ตรงกับ "ผลที่ควรเห็น"
 - `.optional()` แปลว่า "ไม่ส่ง field นี้มา" ไม่ได้แปลว่า "ส่ง `null` มา" บท 020 สอนเรื่องนี้ตรงๆ ว่า `null` ไม่ผ่าน zod
-- **placeholder ของ schema ในแบบฝึกหัด:** ใช้ `z.custom<T>()` ที่ยอมทุกค่า หรือ schema ที่หลวมกว่า แล้วมี guard ที่ `safeParse` ตัวอย่างที่ **schema ที่ถูกต้องต้องไม่ผ่าน** (เช่น `orderId: "1002"`, `P999`, `quantity: 0`) แล้วหยุด (`👉`) เมื่อ placeholder ยอมตัวอย่างนั้น (ดู `buildSchema` ของบท 020 exercise-1, `productIdField` / `cartSchema` ของบท 021, `describeFailure` / `classifyWithRetry` ของบท 022)
+- **placeholder ของ schema ในแบบฝึกหัด:** ใช้ `z.custom<T>()` ที่ยอมทุกค่า หรือ schema ที่หลวมกว่า แล้วมี guard ที่ `safeParse` ตัวอย่างที่ **schema ที่ถูกต้องต้องไม่ผ่าน** (เช่น `orderId: "1002"`, `P999`, `quantity: 0`) แล้วหยุด (`👉`) เมื่อ placeholder ยอมตัวอย่างนั้น (ดู `buildSchema` ของบท 020 exercise-1, `productIdField` / `cartSchema` ของบท 021) · guard อีกแบบ: หยุดเมื่อฟังก์ชันที่ยังไม่เติมคืนค่าตั้งต้น (ดู `describeFailure` / `classifyWithRetry` ของบท 022 ที่คืน `""` / ค่าเริ่มต้นจนกว่าจะเติมจริง)
 
 ### structured output
 
-- ไฟล์ `.ollama` ส่ง `{ method: "functionCalling" }` เสมอ เพราะ Ollama Cloud ไม่รับ schema ทาง `format` (`jsonSchema`) · ไฟล์ `.google` ส่งแค่ `{ name: … }` เพราะ `ChatGoogle` ใช้ `functionCalling` ที่บังคับ `tool_choice` เป็นค่าเริ่มต้น
+- ไฟล์ `.ollama` ส่ง `{ method: "functionCalling" }` เสมอ ตามเอกสารออกแบบที่ระบุว่า Ollama Cloud ไม่รับ schema ทาง `format` (`jsonSchema`) (6b-12 ยังต้องยืนยันกับ provider จริง) · ไฟล์ `.google` ส่งแค่ `{ name: … }` เพราะ `ChatGoogle` ใช้ `functionCalling` ที่บังคับ `tool_choice` เป็นค่าเริ่มต้น
 - `ChatOllama` ไม่มี `tool_choice` บทจึงต้องเขียนชื่อเครื่องมือใน system message (เช่น `CLASSIFY_SYSTEM` ของบท 022) และถือว่าโมเดลอาจตอบเป็นข้อความธรรมดาจนได้ `undefined` เป็นเรื่องปกติที่บทต้องอธิบายได้
-- shim `internal/dev/opencode-shim.ts` ส่ง `tools` ต่อตามที่ได้และ **ไม่เติม `tool_choice`** · ผลทดลอง Task 3 (deepseek ผ่าน shim) อยู่หัวข้อ "structured output ผ่าน opencode shim (แผน 3)" ใน [`spikes.md`](./spikes.md): ได้ object 5/5 และไม่มี `null` ใน field ที่ `.optional()` จึงคง `.optional()` ไม่เปลี่ยนเป็น `.nullish()` · ผลนี้ยังต้องยืนยันกับ Ollama และ Gemini จริงใน 6b-12
+- `internal/dev/opencode-translate.ts:59` ส่ง `tools` ต่อตามที่ได้และ **ไม่เติม `tool_choice`** (มีเทสต์ `internal/dev/opencode-shim.structured.test.ts` คุมเรื่องนี้) · ผลทดลอง Task 3 (deepseek ผ่าน shim) อยู่หัวข้อ "structured output ผ่าน opencode shim (แผน 3)" ใน [`spikes.md`](./spikes.md): ได้ object 5/5 และไม่มี `null` ใน field ที่ `.optional()` จึงคง `.optional()` ไม่เปลี่ยนเป็น `.nullish()` · ผลนี้ยังต้องยืนยันกับ Ollama และ Gemini จริงใน 6b-12
 - `includeRaw: true` กับ `.batch()` ของ `@langchain/core` 1.4.1: `includeRaw` ประกอบ chain ด้วย `withFallbacks` (fallback คืน `parsed: null`) และ `RunnableWithFallbacks.batch()` รัน fallback ให้ทุก input เมื่อมีข้อเดียวล้ม `parsed` ของทุกข้อจึงเป็น `null` บท 022 จึงเรียก `invoke` ทีละข้อ (ทั้ง example และแบบฝึกหัด 1) เพราะต้องบอกได้ว่าข้อไหนผิด — บทที่ต้องรายงานรายข้อห้ามใช้ `.batch` กับ `includeRaw`
 - `describeFailure` ของบท 022 ตรวจ args ด้วย `StrictQuestion` (= `CustomerQuestion` + `summary.max(15)`) ไม่ใช่ `CustomerQuestion` เพราะ `CustomerQuestion.safeParse` ผ่านพอดีกับ args ที่ล้มในขั้นของ schema ที่เข้มกว่า
 
@@ -123,7 +123,7 @@ pnpm renumber remove 012             # หลังลบโฟลเดอร�
   ```
 
   บทใหม่ต้องมี README ครบหัวข้อที่ `pnpm check` บังคับ (8 หัวข้อ ยังไม่ต้องมี `## เปิดดูใน Studio` เพราะเริ่มบท 046) และไม่มีไฟล์รัน จึงไม่ต้องมี `internal/checks/NNN.ts` · ต้องขึ้น `โครงคอร์สถูกต้อง` และ test ผ่านทั้งหมด · ทำ 2 รอบคือเลขที่อยู่กลางช่วงและเลขต้นๆ ที่ข้ามค่าคงที่ทุกตัว
-- **ผลหลังมีบท 017–022** (clone ใหม่จาก commit ของ Task 10 · `insert 017` และ `insert 002`): ทั้ง 2 รอบขึ้น `โครงคอร์สถูกต้อง` และ test ผ่าน 407/407 · รอบ `insert 002` เลื่อนค่าคงที่ครบทุกตัว (`SETUP_LESSON`, `ENV_LESSON`, `STUDIO_FROM`, `PROVIDER_PAIRS_FROM`/`TO`) โดยไม่ต้องแก้ test
+- **ผลหลังมีบท 017–022** (clone ใหม่จาก commit ของ Task 10 คือ `02d6dbb` · `insert 017` และ `insert 002`): ทั้ง 2 รอบขึ้น `โครงคอร์สถูกต้อง` และ test ผ่าน 407/407 · รอบ `insert 002` เลื่อนค่าคงที่ครบทุกตัว (`SETUP_LESSON`, `ENV_LESSON`, `STUDIO_FROM`, `PROVIDER_PAIRS_FROM`/`TO`) โดยไม่ต้องแก้ test
 
 ห้าม push จนกว่าจะครบเงื่อนไขในเอกสารออกแบบข้อ 5.14 แล้วจึง push `main` และ `solutions` พร้อมกันครั้งเดียว
 

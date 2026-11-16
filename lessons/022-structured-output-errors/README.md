@@ -264,7 +264,7 @@ pnpm lesson 022 exercise-3.google
 
 ## แบบฝึกหัด
 
-1. **`exercise-1.*`:** เติม `describeFailure(raw)` ให้คืนเหตุผลบรรทัดเดียว: ถ้าไม่มี tool call คืน `ไม่ได้เรียกเครื่องมือ ตอบเป็นข้อความ: <ข้อความ 60 ตัวอักษร>` ถ้ามี tool call ให้ตรวจ args ด้วย `StrictQuestion.safeParse` แล้วคืน `args ไม่ตรง schema: <prettifyError ที่ยุบเป็นบรรทัดเดียว>` ไฟล์ใช้ schema ที่เข้มขึ้น (`summary` ยาวไม่เกิน 15 ตัวอักษร) เพื่อให้มีโอกาสเห็น args ที่ไม่ผ่านจริง และพิมพ์เหตุผลของทุกข้อ
+1. **`exercise-1.*`:** เติม `describeFailure(raw)` ให้คืนเหตุผลบรรทัดเดียว: ถ้าไม่มี tool call คืน `ไม่ได้เรียกเครื่องมือ ตอบเป็นข้อความ: <ข้อความ 60 ตัวอักษร>` ถ้ามี tool call ให้ตรวจ args ด้วย `StrictQuestion.safeParse` แล้วคืน `args ไม่ตรง schema: <prettifyError ที่ยุบเป็นบรรทัดเดียว>` ถ้า `safeParse` ผ่าน (ไม่ควรเกิด เพราะไฟล์เรียก `describeFailure` เฉพาะตอน `parsed == null`) ให้คืน `""` หรือข้อความสั้น ๆ ไฟล์ใช้ schema ที่เข้มขึ้น (`summary` ยาวไม่เกิน 15 ตัวอักษร) เพื่อให้มีโอกาสเห็น args ที่ไม่ผ่านจริง และพิมพ์เหตุผลของทุกข้อ
 2. **`exercise-2.*`:** เติม `classifyWithRetry(classify, message, maxAttempts)` ให้เรียก `classify(message)` ซ้ำเมื่อได้ `null` จนได้ผลหรือครบ `maxAttempts` แล้วคืน `{ result, attempts }` ไฟล์ตรวจด้วยตัวปลอม 2 ตัว (ได้ผลครั้งที่ 2 กับ ไม่ได้ผลเลย) แล้วใช้กับโมเดลจริงโดย `classify` อ่าน `parsed ?? null` จาก `includeRaw`
 3. **`exercise-3.*` ⭐:** เติม `contextFor(question, customerId)` ให้ประกอบข้อมูลจากร้านตามประเภทคำถาม: `product` ค้นด้วย `keywords` ทีละคำ (ไม่ซ้ำ ไม่เกิน 5 ชิ้น), `order` เปิดคำสั่งซื้อของลูกค้าคนนี้หรือรายการคำสั่งซื้อทั้งหมด, `policy`/`other` คืน `""` ไฟล์คือแชทบอทที่แยกประเภทก่อนตอบและใส่ข้อมูลนั้นใน system ทุกตา
 

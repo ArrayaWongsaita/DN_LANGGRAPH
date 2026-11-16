@@ -21,6 +21,14 @@
 - test ที่ยังขาด: ทางแยก `child.error` ของ runner, SIGTERM-only timeout, บัฟเฟอร์ไม่จำกัด, parse argv (แผน 22)
 - แผน 4: ข้อความท้าย renumber ยังบอกให้แก้ *.test.ts เอง · test ของกฎ fence ใน README ไม่ครอบคลุม indented fence/closer มีข้อความต่อท้าย · เลขบทในคอลัมน์ที่ 2 ของตาราง "สิ่งที่ต้องมี" ใน README (เช่น `| … | 003 | ฟรี |`) ไม่ถูกเลื่อนเวลา renumber (เห็นตอนทดลอง `insert 002`)
 
+## Later (จากการรีวิวแผน 3)
+
+- บท 019: ไฟล์บท 6 ไฟล์ตัดข้อความที่ 40 ตัวอักษรโดยไม่มี `…` ต่อท้ายตามที่กฎกำหนด แก้เมื่อกลับมาแตะบท 019 (แตะ `exercise-*` จึงต้อง merge ไป `solutions` แล้วรัน verify ใหม่)
+- บท 018: `internal/checks/018.ts` ยังฮาร์ดโค้ด 24 / 26 / `จาก 24` ให้คำนวณจาก `listProducts().length` · `expectPrice`/stock ใช้ `includes` ตรงๆ (`1,380` ผ่านเพราะเจอ `380`, `150` ผ่านเพราะเจอ `15`) ต้องเทียบแบบมีขอบเขต
+- บท 017: ตัวจับ marker รับ `[ขอบเขต]` / `[ตอบ]` (ความหมายตรงข้าม) ด้วย ให้บังคับ `นอกขอบเขต`/`ไม่ตอบ` โดยคงความทนต่อ typo ที่เจอจริง
+- checks 017–022: `expectNoLeak` ไม่ถูกใช้กับเนื้อคำตอบ (`ราคา undefined 380 บาท` ผ่านได้) · helper ต่อไฟล์ (`expectAnswer`, `expectNoLeak`, `common`, `norm`, `linesOf`, `Block`/`splitBlocks`/`bodyLines`) ซ้ำกันทุกไฟล์ ให้ย้ายไป `internal/verify/expect.ts` (หรือไฟล์ข้างเคียง) ตอนทำบทถัดไป
+- solutions (เลื่อนไว้ ต้องรัน solutions ใหม่): บท 022 exercise-3 พิมพ์คำสั่งซื้อทั้งหมดโดยไม่มีเพดาน 5 บรรทัดเหมือนสินค้า และมี guard `Map.has` ที่ซ้ำเกิน · comment ของบท 021 exercise-2 พูดถึง `.refine` ทั้งที่ schema ไม่มี
+
 ## Later (จากการรีวิวแผน 2)
 
 - hook ของ `lesson-guards.test.ts` ที่กันแค่ `fetch` ต้องกัน MCP (child process) และ pg / socket ด้วย ก่อนบทแรกที่ใช้ของเหล่านั้น (แผน 16)

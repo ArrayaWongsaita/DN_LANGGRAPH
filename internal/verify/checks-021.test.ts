@@ -113,7 +113,7 @@ describe("เกณฑ์ตรวจบท 021 (example)", () => {
       .replace("สรุป: แปลงสำเร็จ 2/3", "สรุป: แปลงสำเร็จ 1/3");
     expect(() => check(run(onlyOne))).toThrow(/อย่างน้อย 2/);
   });
-  it("ไม่ผ่านเมื่อคำถามที่ 1 แปลงไม่สำเร็จพร้อมกับไม่มีตัวกรองของข้ออื่น หรือ exit code ไม่ใช่ 0", () => {
+  it("ไม่ผ่านเมื่อชื่อเครื่องมือในผลรันผิด หรือ exit code ไม่ใช่ 0", () => {
     expect(() => check(run(EXAMPLE.replace("ชื่อเครื่องมือ: search_filter", "ชื่อเครื่องมือ: x")))).toThrow();
     expect(() => check({ ...run(EXAMPLE), exitCode: 1 })).toThrow();
   });
