@@ -1,14 +1,10 @@
-// แบบฝึกหัด 2: เขียนตัวอย่างเป็นข้อความต่อท้าย system แทนการส่งเป็นคู่ข้อความ
+// เฉลยแบบฝึกหัด 2: เขียนตัวอย่างเป็นข้อความต่อท้าย system แทนการส่งเป็นคู่ข้อความ
 //
 // โจทย์: เติม examplesAsText(examples) ให้คืนข้อความที่เขียนตัวอย่างทุกข้อ บรรทัดละข้อ ในรูปแบบ
 //   ข้อความ: <text> → ประเภท: <label>
 // ไฟล์จะต่อข้อความนี้ท้าย system แล้วส่งแค่ system กับคำถาม (ไม่มีคู่ user/assistant) ถามชุด TESTS 5 ข้อ
-//
-// แนวทาง:
-// 1. ใช้ map กับตัวอย่างแต่ละข้อให้เป็น 1 บรรทัด แล้วต่อด้วยขึ้นบรรทัดใหม่ (join) เหมือน catalogText ในบท 018
-// 2. ลูกศรในรูปแบบคือตัวอักษร → (ก๊อปจากโจทย์ได้)
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ examplesAsText คืนข้อความว่างเสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 019 exercise-2.google
+// รัน: pnpm lesson 019 exercise-2.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
 import { ChatGoogle } from "@langchain/google";
 import { env } from "../../src/lib/env";
 
@@ -40,18 +36,12 @@ const TESTS: Example[] = [
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function examplesAsText(examples: Example[]): string {
-  void examples; // บรรทัดนี้กัน lint เตือนว่าตัวแปร examples ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ examples
-  // 👉 คืนตัวอย่างทุกข้อ บรรทัดละข้อ รูปแบบ "ข้อความ: ... → ประเภท: ..." (แทนบรรทัด return "")
-  return "";
+  // เฉลยจุดที่ 1: ตัวอย่าง 1 ข้อเป็น 1 บรรทัด แล้วต่อด้วย \n เหมือน catalogText ในบท 018
+  // ลูกศร → คั่นข้อความกับป้ายให้เห็นขอบเขตของแต่ละส่วนชัดกว่าการใช้ช่องว่าง
+  return examples.map((e) => `ข้อความ: ${e.text} → ประเภท: ${e.label}`).join("\n");
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ examplesAsText ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  if (examplesAsText([{ text: "ก", label: "other" }]) === "") {
-    console.log("👉 ยังไม่ได้เติม examplesAsText (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจ examplesAsText กับตัวอย่าง 2 ข้อแรก (ต่อเป็นบรรทัดเดียวเพื่อให้ตรวจง่าย)
   console.log(`ตรวจตัวอย่าง: ${examplesAsText(EXAMPLES.slice(0, 2)).replace(/\s*\n\s*/g, " | ")}`);
   // ตัวอย่างที่เขียนเป็นข้อความไม่ได้สอนรูปแบบคำตอบเข้มเท่าคู่ user/assistant โมเดลอาจตอบตามรูป "ประเภท: ..."
