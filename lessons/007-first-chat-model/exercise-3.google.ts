@@ -17,7 +17,7 @@ const QUESTION = "แนะนำของขวัญราคาไม่เ�
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function modelName(m: ChatGoogle): string | undefined {
-  void m; // ลบบรรทัดนี้เมื่อเริ่มใช้ m
+  void m; // บรรทัดนี้กัน lint เตือนว่าตัวแปร m ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ m
   // 👉 คืนชื่อโมเดลจาก m (แทนบรรทัด return undefined)
   return undefined;
 }

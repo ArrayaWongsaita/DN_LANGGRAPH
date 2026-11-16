@@ -23,7 +23,7 @@ const model = new ChatOllama({
 });
 
 function contentKind(content: AIMessage["content"]): "string" | "array" | undefined {
-  void content; // ลบบรรทัดนี้เมื่อเริ่มใช้ content
+  void content; // บรรทัดนี้กัน lint เตือนว่าตัวแปร content ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ content
   // 👉 คืน "string" หรือ "array" ตามชนิดของ content (แทนบรรทัด return undefined)
   return undefined;
 }

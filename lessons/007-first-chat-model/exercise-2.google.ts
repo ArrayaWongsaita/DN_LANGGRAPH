@@ -18,7 +18,7 @@ const QUESTION = "แนะนำของขวัญราคาไม่เ�
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function contentKind(content: AIMessage["content"]): "string" | "array" | undefined {
-  void content; // ลบบรรทัดนี้เมื่อเริ่มใช้ content
+  void content; // บรรทัดนี้กัน lint เตือนว่าตัวแปร content ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ content
   // 👉 คืน "string" หรือ "array" ตามชนิดของ content (แทนบรรทัด return undefined)
   return undefined;
 }

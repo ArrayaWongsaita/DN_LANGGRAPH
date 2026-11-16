@@ -7,7 +7,7 @@
 // 1. เปิด example.ollama.ts ข้างๆ ดูวิธีสร้าง model
 // 2. จุด 👉: สร้าง new ChatOllama({ model, baseUrl, headers }) ค่าทุกตัวมาจาก .env (model: env("OLLAMA_MODEL"),
 //    baseUrl: env("OLLAMA_BASE_URL") และ headers ใส่ Authorization ก็ต่อเมื่อมี OLLAMA_API_KEY)
-//    อย่าลืมเพิ่ม import ของ env และ optionalEnv จาก "../../src/lib/env" ที่หัวไฟล์
+//    ต้องเพิ่มบรรทัดนี้ที่หัวไฟล์ด้วย: import { env, optionalEnv } from "../../src/lib/env";
 // 3. ตอนนี้ createModel คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล) เมื่อคืนโมเดลจริงแล้วจะทำงานต่อ
 // 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 007 exercise-1.ollama
 import { ChatOllama } from "@langchain/ollama";

@@ -25,7 +25,7 @@ const example = (label: string): FileCheck => ({
     const second = extractSection(stdout, "--- system แบบที่ 2: ตอบเป็นข้อ ---", null, label);
     expectThai(first, `${label} (system แบบที่ 1)`);
     expectThai(second, `${label} (system แบบที่ 2)`);
-    const bullets = second.match(/^\s*(-|\d+[.)])\s/gm)?.length ?? 0;
+    const bullets = second.match(/^\s*([-*•]|\d+[.)])\s/gm)?.length ?? 0;
     if (bullets < 2) throw new CheckFailure(`${label}: คำตอบแบบที่ 2 ต้องเป็นข้อ อย่างน้อย 2 บรรทัด (เจอ ${bullets})`);
   },
 });
@@ -34,7 +34,9 @@ const exercise1 = (label: string): FileCheck => ({
   check: (run) => {
     common(run, label);
     const answer = extractAfter(run.stdout, "คำตอบ: ", label);
-    expectMatches(answer, /สินค้า: .+ \| ราคา: [\d,]+ บาท/, label);
+    // ตัด Markdown (* และ `) ก่อน แล้วยอมรับช่วงราคา ~ ทศนิยม ตัวคั่นหลักพัน และ ฿
+    const plain = answer.replace(/[*`]/g, "");
+    expectMatches(plain, /สินค้า\s*:[^|\n]+\|\s*ราคา\s*:\s*฿?\s*~?\s*[\d,.]+(?:\s*[-–~]\s*฿?\s*[\d,.]+)?\s*(?:฿\s*)?บาท/, label);
   },
 });
 

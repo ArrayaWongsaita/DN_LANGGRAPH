@@ -22,7 +22,7 @@ const model = new ChatOllama({
 });
 
 function modelName(m: ChatOllama): string | undefined {
-  void m; // ลบบรรทัดนี้เมื่อเริ่มใช้ m
+  void m; // บรรทัดนี้กัน lint เตือนว่าตัวแปร m ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ m
   // 👉 คืนชื่อโมเดลจาก m (แทนบรรทัด return undefined)
   return undefined;
 }

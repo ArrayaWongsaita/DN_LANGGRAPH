@@ -34,7 +34,7 @@ const example = (label: string, provider: Provider): FileCheck => ({
     if (total !== input + output) throw new CheckFailure(`${label}: รวม (${total}) ไม่เท่ากับขาเข้า + ขาออก (${input + output})`);
     expectIncludes(head, `provider: ${provider}`, label);
     expectIncludes(head, "block: text", label);
-    expectMatches(head, /จบเพราะ: \S+/, label);
+    expectMatches(head, /จบเพราะ: (?!undefined\b|null\b)\S+/, label);
     expectThai(extractAfter(run.stdout, "คำตอบ: ", label), label);
     if (provider === "ollama" && run.usage !== null) {
       if (input !== run.usage.input || output !== run.usage.output) {

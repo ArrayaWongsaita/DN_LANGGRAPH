@@ -6,7 +6,7 @@
 // แนวทาง:
 // 1. เปิด example.google.ts ข้างๆ ดูวิธีสร้าง model
 // 2. จุด 👉: สร้าง new ChatGoogle({ model, apiKey }) ค่าทั้งสองมาจาก .env (env("GOOGLE_MODEL") และ env("GOOGLE_API_KEY"))
-//    อย่าลืมเพิ่ม import ของ env จาก "../../src/lib/env" ที่หัวไฟล์
+//    ต้องเพิ่มบรรทัดนี้ที่หัวไฟล์ด้วย: import { env } from "../../src/lib/env";
 // 3. ตอนนี้ createModel คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล) เมื่อคืนโมเดลจริงแล้วจะทำงานต่อ
 // 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 007 exercise-1.google
 import { ChatGoogle } from "@langchain/google";

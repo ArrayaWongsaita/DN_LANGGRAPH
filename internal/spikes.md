@@ -428,5 +428,5 @@
 - [ ] `grep -rn "TODO(6b)" lessons` ไม่เหลือ
 - เรื่องที่ต้องดูเป็นรายบท:
   - 007: `ChatGoogle` คืน `content` เป็น array หรือ string · usage hook นับ token ของ `ChatGoogle` ได้ (ผ่าน `fetch(Request)`) · `model.model` ของ `ChatGoogle` คืนชื่อเดียวกับ `GOOGLE_MODEL`
-  - 008: ค่า `finishReason` จริง · `usage_metadata.output_tokens` ของ Gemini รวม thinking หรือไม่ เทียบกับ usage hook · `contentBlocks` ของ Gemini
+  - 008: `ChatGoogle` เก็บเหตุที่หยุดไว้ที่ `finish_reason` หรือ `finishReason` (example.google.ts อ่านทั้งสองชื่อและ throw ถ้าไม่มี) และค่าจริงคืออะไร · `usage_metadata.output_tokens` ของ Gemini รวม thinking หรือไม่ เทียบกับ usage hook · `contentBlocks` ของ Gemini
   - 009: Gemini รับ `{ role: "system" }` และ few-shot ที่มี ai message

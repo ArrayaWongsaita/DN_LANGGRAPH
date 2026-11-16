@@ -27,7 +27,7 @@ const model = new ChatOllama({
 });
 
 function estimateCost(u: UsageMetadata): number | undefined {
-  void u; // ลบบรรทัดนี้เมื่อเริ่มใช้ u
+  void u; // บรรทัดนี้กัน lint เตือนว่าตัวแปร u ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ u
   // 👉 คำนวณค่าใช้จ่ายจาก u และ PRICE (แทนบรรทัด return undefined)
   return undefined;
 }

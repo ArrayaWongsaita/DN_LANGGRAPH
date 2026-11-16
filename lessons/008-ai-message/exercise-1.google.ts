@@ -22,7 +22,7 @@ const PRICE = { input: 0.3, output: 2.5 }; // ดอลลาร์ต่อ 1 �
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function estimateCost(u: UsageMetadata): number | undefined {
-  void u; // ลบบรรทัดนี้เมื่อเริ่มใช้ u
+  void u; // บรรทัดนี้กัน lint เตือนว่าตัวแปร u ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ u
   // 👉 คำนวณค่าใช้จ่ายจาก u และ PRICE (แทนบรรทัด return undefined)
   return undefined;
 }

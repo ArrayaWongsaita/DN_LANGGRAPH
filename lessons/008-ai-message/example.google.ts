@@ -35,7 +35,11 @@ export async function main(): Promise<void> {
   console.log("--- ขั้นที่ 2: อ่าน AIMessage จากโมเดลจริง ---");
   const res = await model.invoke(QUESTION);
   describe(res);
-  // Gemini บอกเหตุที่โมเดลหยุดไว้ที่ finishReason (STOP = จบเอง, MAX_TOKENS = หมดโควต้า token)
-  console.log(`จบเพราะ: ${String(res.response_metadata.finishReason)}`);
+  // Gemini บอกเหตุที่โมเดลหยุดไว้ใน finish_reason หรือ finishReason (ชื่อต่างกันตามเส้นทางที่ไลบรารีใช้) เช่น stop หรือ MAX_TOKENS
+  const finish: unknown = res.response_metadata.finish_reason ?? res.response_metadata.finishReason;
+  if (typeof finish !== "string") {
+    throw new Error("ไม่พบเหตุที่โมเดลหยุดใน response_metadata (ลองพิมพ์ res.response_metadata ดูว่าฟิลด์ชื่ออะไร)");
+  }
+  console.log(`จบเพราะ: ${finish}`);
   console.log(`คำตอบ: ${res.text}`);
 }
