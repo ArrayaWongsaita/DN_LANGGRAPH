@@ -23,7 +23,6 @@ function estimateCost(u: UsageMetadata): number {
 }
 
 export async function main(): Promise<void> {
-
   const res = await model.invoke(QUESTION);
   const usage = res.usage_metadata;
   if (usage === undefined) {

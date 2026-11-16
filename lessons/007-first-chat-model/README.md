@@ -170,6 +170,7 @@ content แบบ array: [{"type":"text","text":"สวัสดี"},{"type":"t
 **`exercise-2.*`**
 - [ ] มีบรรทัด `ชนิดของ content: string` หรือ `ชนิดของ content: array` (Ollama มักได้ `string`)
 - [ ] มีบรรทัด `text: ` ตามด้วยข้อความภาษาไทย
+- [ ] มีบรรทัด `ตรวจตัวอย่าง: string array` (contentKind ต้องตอบ `string` กับข้อความธรรมดา และ `array` กับ array จริง ไม่ใช่ตอบค่าเดียวตายตัว)
 
 **`exercise-3.*`**
 - [ ] มีบรรทัด `โมเดล: ` ตามด้วยชื่อที่ตรงกับ `OLLAMA_MODEL` (ไฟล์ ollama) หรือ `GOOGLE_MODEL` (ไฟล์ google) ใน `.env` ของคุณทุกตัวอักษร
@@ -186,7 +187,7 @@ content แบบ array: [{"type":"text","text":"สวัสดี"},{"type":"t
 ทำทั้งแบบ `.ollama.ts` และ `.google.ts` ของแต่ละข้อ
 
 1. **`exercise-1.*`:** มี 👉 1 จุด เขียนฟังก์ชัน `createModel()` ให้สร้างโมเดลจาก `.env` เอง (ดู `example.*` ข้างๆ) แล้วถามคำถามเดิม ผลที่ต้องเห็นคือ `คำตอบ: ...` ต้องเพิ่ม `import` ของ `env` (และ `optionalEnv` สำหรับ Ollama) ที่หัวไฟล์เอง
-2. **`exercise-2.*`:** เติม `contentKind(content)` ให้บอกว่า `content` เป็น `"string"` หรือ `"array"` (ใช้ `typeof` หรือ `Array.isArray`) แล้วพิมพ์ `ชนิดของ content: ...` และ `text: ...` ของคำตอบจริง
+2. **`exercise-2.*`:** เติม `contentKind(content)` ให้บอกว่า `content` เป็น `"string"` หรือ `"array"` (ใช้ `typeof` หรือ `Array.isArray`) แล้วพิมพ์ `ชนิดของ content: ...` และ `text: ...` ของคำตอบจริง (ไฟล์พิมพ์บรรทัด `ตรวจตัวอย่าง: ...` ให้เองแล้ว เพื่อเช็กว่า contentKind แยก string กับ array ได้จริง)
 3. **`exercise-3.*` ⭐:** เติม `modelName(m)` ให้อ่านชื่อโมเดลจากตัวโมเดลเอง (ฟิลด์ `model`) แล้วพิมพ์ `โมเดล: ...` ตามด้วยคำตอบ ชื่อต้องตรงกับที่ตั้งใน `.env`
 
 ไฟล์แบบฝึกมี 👉 และค่าชั่วคราวไว้ให้รันได้ (ตัวที่ยังไม่เติมจะหยุดและบอกว่าต้องเติมอะไร) แต่ผลจะยังไม่ผ่าน checklist จนกว่าจะแก้ครบ ถ้าติด ลองเปิดไฟล์ `example.*` ข้างๆ และอ่านเฉลยบน branch `solutions` เมื่อทำเองแล้ว

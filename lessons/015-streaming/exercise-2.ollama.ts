@@ -4,7 +4,6 @@
 // ไฟล์จะ stream คำตอบของคำถามยาว และเรียก abort() เมื่อ shouldStop คืน true แล้วพิมพ์
 //   หยุดเมื่อได้ N ตัวอักษร (ตั้งไว้ 50)
 // รัน: pnpm lesson 015 exercise-2.ollama
-
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
 

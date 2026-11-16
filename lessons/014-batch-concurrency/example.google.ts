@@ -12,7 +12,9 @@ const QUESTIONS = [
   "DN Shop ขายกระเป๋าผ้าลายกาแฟใบละ 120 บาท เขียนคำโปรยสั้นๆ ตอบไม่เกิน 1 ประโยค",
 ];
 
-const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
+// ChatGoogle ลองใหม่เองโดยปริยาย (ลองซ้ำหลายรอบ) ถ้าไม่ปิด 429 จะถูกลองซ้ำเงียบๆ ข้างใน ทำให้เราไม่เห็นว่าชนโควต้า
+// และผลวัดเวลา batch เพี้ยน ตั้ง maxRetries: 0 ให้ error ออกมาถึงโค้ดของเรา
+const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY"), maxRetries: 0 });
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

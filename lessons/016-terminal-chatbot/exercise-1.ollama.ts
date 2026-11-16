@@ -4,7 +4,6 @@
 // ถ้าไม่ใช่คำสั่งให้คืน false โครง loop เหมือนตัวอย่าง ต่างที่เมื่อ handleCommand คืน true ไฟล์จะพิมพ์ ล้างประวัติแล้ว
 // และถามคำถามถัดไปเลยโดยไม่ส่งอะไรให้โมเดล
 // รัน: pnpm lesson 016 exercise-1.ollama
-
 import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { ask } from "../../src/lib/ask";

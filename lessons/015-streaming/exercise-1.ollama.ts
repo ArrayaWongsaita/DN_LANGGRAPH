@@ -5,7 +5,6 @@
 //   ได้ทั้งหมด: N ตัวอักษร
 //   ใช้เวลาถึงชิ้นแรก: X ms
 // รัน: pnpm lesson 015 exercise-1.ollama
-
 import { AIMessageChunk } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";

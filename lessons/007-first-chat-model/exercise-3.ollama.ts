@@ -22,7 +22,6 @@ function modelName(m: ChatOllama): string {
 }
 
 export async function main(): Promise<void> {
-
   console.log(`โมเดล: ${modelName(model)}`);
   const res = await model.invoke(QUESTION);
   console.log(`คำตอบ: ${res.text}`);

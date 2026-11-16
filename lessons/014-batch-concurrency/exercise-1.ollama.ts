@@ -5,7 +5,6 @@
 //   ข้อ i: สำเร็จ   หรือ   ข้อ i: ล้มเหลว (<ข้อความ error>)
 //   สำเร็จ X ล้มเหลว Y
 // รัน: pnpm lesson 014 exercise-1.ollama
-
 import { RunnableLambda } from "@langchain/core/runnables";
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";

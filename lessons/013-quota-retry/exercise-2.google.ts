@@ -17,7 +17,9 @@ const QUESTIONS = [
   "ควรเก็บเมล็ดกาแฟอย่างไร ตอบ 1 ประโยค",
 ];
 
-const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
+// ChatGoogle ลองใหม่เองโดยปริยาย (ลองซ้ำหลายรอบ) และไม่หยุดเมื่อเจอ TimeoutError จึงซ้อนกับ .withRetry() ของบทนี้
+// และทำให้โปรแกรมค้างอยู่หลังได้คำตอบแล้ว ตั้ง maxRetries: 0 เพื่อให้ .withRetry() เป็นชั้นลองใหม่ชั้นเดียว
+const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY"), maxRetries: 0 });
 
 const ZERO: UsageMetadata = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
 

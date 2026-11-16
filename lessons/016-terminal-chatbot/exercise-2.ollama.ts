@@ -6,7 +6,6 @@
 //   (ส่งไป N ข้อความ)
 // ก่อนคำตอบของทุกตา (N นับ system ด้วย) ไฟล์ใช้ max เท่ากับ 4
 // รัน: pnpm lesson 016 exercise-2.ollama
-
 import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { ask } from "../../src/lib/ask";

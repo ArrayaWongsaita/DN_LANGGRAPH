@@ -5,7 +5,6 @@
 // และพิมพ์หลังคำตอบของทุกตา
 //   (token ขาเข้า N ขาออก M)
 // รัน: pnpm lesson 016 exercise-3.ollama
-
 import { AIMessage, AIMessageChunk, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { concat } from "@langchain/core/utils/stream";
 import { ChatOllama } from "@langchain/ollama";

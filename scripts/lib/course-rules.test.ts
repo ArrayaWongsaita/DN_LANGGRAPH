@@ -10,6 +10,7 @@ import {
   STUDIO_FROM,
   checkLessonFileNames,
   checkLessonFolders,
+  checkLessonRunNumbers,
   checkNoHardcodedModels,
   checkNoSecrets,
   checkProviderPairs,
@@ -42,6 +43,7 @@ function allRules(root: string): Problem[] {
     ...checkNoHardcodedModels(root),
     ...checkNoSecrets(root),
     ...checkThaiSaraAm(root),
+    ...checkLessonRunNumbers(root),
     ...checkVerifyCoverage(root),
   ];
 }
@@ -95,6 +97,15 @@ describe("course rules", () => {
     const root = rootWithFiles("008-a", ["exercise1.ts", "example-ollama.ts", "exercise-1.Ollama.ts", "helper.ts", "example.test.ts", "exercise-1.ts"]);
     expect(checkLessonFileNames(root).map((p) => path.basename(p.file)).sort()).toEqual(["example-ollama.ts", "exercise-1.Ollama.ts", "exercise1.ts"]);
     expect(checkLessonFileNames(root)[0].message).toBe("ชื่อไฟล์ไม่ตรงรูปแบบ example / exercise-N (.ollama|.google) จึงจะไม่ถูกรัน");
+  });
+  it("checkLessonRunNumbers จับ pnpm lesson ที่เลขไม่ตรงบท (เฉพาะ .ts)", () => {
+    const root = rootWithFiles("008-a", ["example.ollama.ts"]);
+    write(root, "lessons/008-a/example.ollama.ts", "// รัน: pnpm lesson 008 example.ollama\n// ลอง pnpm lesson 007 x\n");
+    write(root, "lessons/008-a/README.md", "pnpm lesson 002\n");
+    const p = checkLessonRunNumbers(root);
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatchObject({ file: "lessons/008-a/example.ollama.ts", line: 2 });
+    expect(p[0].message).toContain("pnpm lesson 008");
   });
   it("checkProviderPairs ไม่ฟ้อง helper.ts", () => expect(checkProviderPairs(rootWithFiles("008-a", ["helper.ts"]))).toEqual([]));
   it("ค่าคงที่เป็น string 3 หลัก", () => {

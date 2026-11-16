@@ -55,7 +55,7 @@ OLLAMA_API_KEY=<key ของคุณ>
 OLLAMA_MODEL=<ชื่อโมเดล>
 ```
 
-เมื่อ `OLLAMA_BASE_URL` เป็น `https://ollama.com` โค้ดของคอร์สจะส่ง header `Authorization` พร้อม key ให้เอง
+เมื่อมี `OLLAMA_API_KEY` ใน `.env` โค้ดของคอร์สจะส่ง header `Authorization: Bearer <key>` ให้เอง (ไม่ขึ้นกับว่า `OLLAMA_BASE_URL` ชี้ไปที่ไหน) ถ้าไม่ตั้ง key ก็ไม่ส่ง header ซึ่งเป็นกรณีของ Ollama ในเครื่อง
 
 > ห้าม commit key และห้ามส่งให้ใคร ถ้าหลุด ให้ลบ key นั้นในหน้า Keys แล้วสร้างใหม่
 

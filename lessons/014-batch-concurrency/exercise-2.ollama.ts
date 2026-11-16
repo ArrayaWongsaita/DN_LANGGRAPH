@@ -6,7 +6,6 @@
 //   งานพร้อมกันสูงสุด: N
 //   ได้คำตอบ: 6 ข้อ
 // รัน: pnpm lesson 014 exercise-2.ollama
-
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
 

@@ -9,7 +9,6 @@
 //   ครั้งที่ 2: สำเร็จ
 //   คำตอบ: ...
 // รัน: pnpm lesson 013 exercise-1.ollama
-
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
 

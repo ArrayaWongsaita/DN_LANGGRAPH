@@ -5,7 +5,6 @@
 //   ข้อ i: ขาเข้า N ขาออก M
 //   รวมทั้งหมด: ขาเข้า N ขาออก M รวม T
 // รัน: pnpm lesson 013 exercise-2.ollama
-
 import { AIMessage, type UsageMetadata } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";

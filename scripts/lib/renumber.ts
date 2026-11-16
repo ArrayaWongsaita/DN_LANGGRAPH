@@ -67,7 +67,7 @@ export function renumberText(
   const parts = [
     String.raw`(?<lp>บท[ \t]*)(?<ll>\d{3}(?:${SEP}\d{3})*)(?!\d)`,
     String.raw`(?<pp>pnpm (?:lesson|verify|studio|test) )(?<pa>\d{3})(?:(?<ps>-)(?<pb>\d{3}))?(?!\d)`,
-    String.raw`(?<cp>checks/)(?<cn>\d{3})(?=\.ts)`,
+    String.raw`(?<cp>checks[/-])(?<cn>\d{3})(?=\.ts|\.test\.ts|["'])`,
   ];
   const names = [...ctx.folders].sort((x, y) => y.length - x.length).map(escapeRe);
   if (names.length > 0) parts.unshift(String.raw`(?<![\d\w-])(?<fn>${names.join("|")})(?![\w-])`);
@@ -106,6 +106,8 @@ export interface RenumberPlan {
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git"]);
+// เทสต์ของเกณฑ์ตรวจรายบท (internal/verify/checks-NNN.test.ts) ผูกกับเลขบท จึงต้องถูกเลื่อนไปกับ internal/checks/NNN.ts
+const CHECK_TEST_RE = /^checks-(\d{3})\.test\.ts$/;
 
 function walk(root: string, rel: string, exts: readonly string[], out: string[]): void {
   const abs = path.join(root, rel);
@@ -113,7 +115,7 @@ function walk(root: string, rel: string, exts: readonly string[], out: string[])
   for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
     if (e.isDirectory()) {
       if (!SKIP_DIRS.has(e.name)) walk(root, `${rel}/${e.name}`, exts, out);
-    } else if (e.isFile() && exts.some((x) => e.name.endsWith(x)) && !e.name.endsWith(".test.ts")) {
+    } else if (e.isFile() && exts.some((x) => e.name.endsWith(x)) && (!e.name.endsWith(".test.ts") || CHECK_TEST_RE.test(e.name))) {
       out.push(`${rel}/${e.name}`);
     }
   }
@@ -147,13 +149,20 @@ export function planRenumber(root: string, op: RenumberOp): { ok: true; plan: Re
   const checkNums = fs.existsSync(checksDir)
     ? fs.readdirSync(checksDir).map((f) => /^(\d{3})\.ts$/.exec(f)?.[1]).filter((x): x is string => x !== undefined)
     : [];
-  const nums = [...new Set([...sorted.map((l) => l.number), ...checkNums])].sort((a, b) => (op.kind === "insert" ? b.localeCompare(a) : a.localeCompare(b)));
+  const verifyDir = path.join(root, "internal", "verify");
+  const checkTestNums = fs.existsSync(verifyDir)
+    ? fs.readdirSync(verifyDir).map((f) => CHECK_TEST_RE.exec(f)?.[1]).filter((x): x is string => x !== undefined)
+    : [];
+  const nums = [...new Set([...sorted.map((l) => l.number), ...checkNums, ...checkTestNums])].sort((a, b) => (op.kind === "insert" ? b.localeCompare(a) : a.localeCompare(b)));
   for (const num of nums) {
     const mapped = mapNumber(Number(num), op);
     if (mapped === null || mapped === Number(num)) continue;
     const lesson = lessons.find((l) => l.number === num);
     if (lesson) renames.push({ from: `lessons/${num}-${lesson.slug}`, to: `lessons/${pad(mapped)}-${lesson.slug}` });
     if (checkNums.includes(num)) renames.push({ from: `internal/checks/${num}.ts`, to: `internal/checks/${pad(mapped)}.ts` });
+    if (checkTestNums.includes(num)) {
+      renames.push({ from: `internal/verify/checks-${num}.test.ts`, to: `internal/verify/checks-${pad(mapped)}.test.ts` });
+    }
   }
 
   // ปลายทางต้องไม่ชนกับของที่มีอยู่ (ยกเว้นที่ถูกย้ายออกไปก่อนหน้าในลำดับ)
@@ -179,7 +188,7 @@ export function planRenumber(root: string, op: RenumberOp): { ok: true; plan: Re
   const removedRefs: RenumberPlan["removedRefs"] = [];
   for (const file of files) {
     const original = fs.readFileSync(path.join(root, file), "utf8");
-    const r = renumberText(original, op, { folders, literals: LITERAL_FILES.includes(file), readmeTable: file === "README.md" });
+    const r = renumberText(original, op, { folders, literals: LITERAL_FILES.includes(file) || CHECK_TEST_RE.test(path.basename(file)), readmeTable: file === "README.md" });
     if (r.text !== original) edits.push({ file, text: r.text, changes: r.changes });
     if (op.kind === "remove" && r.removedRefs > 0) removedRefs.push({ file, count: r.removedRefs });
   }
@@ -269,7 +278,7 @@ export function runRenumber(
   const kind = rest[0];
   const m = rest[1] !== undefined && /^\d{1,3}$/.test(rest[1]) ? Number(rest[1]) : 0;
   if ((kind !== "insert" && kind !== "remove") || m < 1 || rest.length !== 2) {
-    err("ใช้งาน: pnpm renumber <insert|remove> NNN [--dry-run]");
+    err("ใช้งาน: pnpm renumber <insert|remove> NNN [--dry-run] [--force]");
     return 1;
   }
   const at3 = pad(m);
@@ -304,6 +313,6 @@ export function runRenumber(
     return 1;
   }
   out(kind === "insert" ? `เสร็จแล้ว สร้างโฟลเดอร์ lessons/${at3}-<slug> ของบทใหม่ แล้วรัน pnpm check และ pnpm test` : "เสร็จแล้ว รัน pnpm check และ pnpm test");
-  out("หมายเหตุ: ไฟล์ *.test.ts ไม่ถูกแก้อัตโนมัติ ให้รัน pnpm test แล้วแก้เลขบทในเทสต์เองถ้ามี");
+  out("หมายเหตุ: ไฟล์ *.test.ts อื่นนอกจาก internal/verify/checks-NNN.test.ts ไม่ถูกแก้อัตโนมัติ ให้รัน pnpm test แล้วแก้เลขบทในเทสต์เองถ้ามี");
   return 0;
 }

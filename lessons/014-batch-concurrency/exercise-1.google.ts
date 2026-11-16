@@ -19,7 +19,9 @@ const QUESTIONS = [
   "DN Shop ขายกระเป๋าผ้าลายกาแฟใบละ 120 บาท เขียนคำโปรยสั้นๆ ตอบไม่เกิน 1 ประโยค",
 ];
 
-const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
+// ChatGoogle ลองใหม่เองโดยปริยาย (ลองซ้ำหลายรอบ) ถ้าไม่ปิด 429 จะถูกลองซ้ำเงียบๆ ข้างใน ทำให้เราไม่เห็นว่าชนโควต้า
+// และผลวัดเวลา batch เพี้ยน ตั้ง maxRetries: 0 ให้ error ออกมาถึงโค้ดของเรา
+const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY"), maxRetries: 0 });
 
 function countResults(rs: (string | Error)[]): { ok: number; failed: number } {
   // เฉลยจุดที่ 1: ใช้ instanceof Error แยกข้อที่ล้ม เพราะ returnExceptions: true ทำให้ข้อที่ล้มกลายเป็นค่า Error อยู่ในอาร์เรย์ผล
