@@ -1,0 +1,42 @@
+// บท 009: ข้อความ 3 บทบาท (system / human / ai) และรูปย่อ { role, content } กับ ChatGoogle
+// ขั้นที่ 1 สร้างข้อความด้วยคลาสแล้วดูชนิด ขั้นที่ 2 ถามคำถามเดิมด้วย system ต่างกัน 2 แบบ
+// รัน: pnpm lesson 009 example.google
+import { AIMessage, coerceMessageLikeToMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { ChatGoogle } from "@langchain/google";
+import { env } from "../../src/lib/env";
+
+const QUESTION = "มีสินค้าอะไรแนะนำสำหรับคนชอบกาแฟบ้าง";
+const SYSTEM_SHORT = "คุณคือพนักงานร้าน DN Shop ตอบสุภาพ สั้น ไม่เกิน 2 ประโยค";
+const SYSTEM_LIST = 'คุณคือพนักงานร้าน DN Shop ตอบเป็นข้อๆ อย่างน้อย 3 ข้อ ขึ้นต้นแต่ละข้อด้วย "- "';
+
+const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
+
+// ถามคำถามเดิมด้วย system ที่ส่งเข้ามา ใช้รูปย่อ { role, content } แทนการสร้างคลาส
+async function askWith(system: string): Promise<string> {
+  const res = await model.invoke([
+    { role: "system", content: system },
+    { role: "user", content: QUESTION },
+  ]);
+  return res.text;
+}
+
+export async function main(): Promise<void> {
+  // ขั้นที่ 1: สร้างข้อความ 3 บทบาทด้วยคลาส ไม่ยิงเน็ต ผลเหมือนกันทุกครั้ง
+  console.log("--- ขั้นที่ 1: ข้อความ 3 บทบาท ---");
+  const messages = [
+    new SystemMessage(SYSTEM_SHORT),
+    new HumanMessage("ร้านมีบริการห่อของขวัญไหม"),
+    new AIMessage("มีครับ ห่อฟรีทุกออร์เดอร์"),
+  ];
+  // m.type คือชื่อบทบาทภายในของ LangChain: system, human, ai
+  for (const m of messages) console.log(`${m.type}: ${m.text}`);
+  // รูปย่อใช้ role "user" แต่ LangChain แปลงเป็นข้อความชนิด human ให้
+  console.log(`แบบย่อ {role: "user"} กลายเป็น: ${coerceMessageLikeToMessage({ role: "user", content: "x" }).type}`);
+
+  // ขั้นที่ 2: คำถามเดิม system ต่างกัน คำตอบเปลี่ยนไปตาม system
+  console.log("--- ขั้นที่ 2: คำถามเดิม system ต่างกัน ---");
+  console.log("--- system แบบที่ 1: ตอบสั้น ---");
+  console.log(await askWith(SYSTEM_SHORT));
+  console.log("--- system แบบที่ 2: ตอบเป็นข้อ ---");
+  console.log(await askWith(SYSTEM_LIST));
+}

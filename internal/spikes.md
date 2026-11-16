@@ -418,3 +418,15 @@
   - `pnpm verify 001-006 --provider ollama`
 - ผลที่คาดหวัง: ✅ ทุกรอบ · บท 001, 003, 004, 005 ขึ้น `– ไม่มีไฟล์ให้รัน` · **จดยอด token รวมของแต่ละ provider** (ขาเข้า/ขาออก) ต่อท้ายหัวข้อ "ผล 6b"
 - ถ้ารอบไหนไม่ผ่าน ให้ดูว่าแก้ที่โค้ดบทหรือที่เกณฑ์ (เกณฑ์ตรวจโครง ไม่ตรวจถ้อยคำ) แก้บน `main` ก่อน แล้ว `git -C ../LANGGRAPH-solutions merge main` · ถ้าเฉลย `.google.ts` ผิด ให้แก้บน `solutions` โดยตรง
+
+
+### 6b-11: บท 007–016 กับ provider จริง (แผน 2 ตรวจได้แค่ opencode-dev)
+
+- [ ] main: `pnpm verify 007-016 --provider google --examples-only --repeat 3` · `--provider ollama-cloud --examples-only --repeat 3` · `--provider ollama --examples-only`
+- [ ] solutions (`../LANGGRAPH-solutions`): `pnpm verify 007-016 --provider google --repeat 3` · `--provider ollama-cloud --repeat 3` · `--provider ollama`
+- [ ] รันผ่านแล้วลบหมายเหตุ ".google.ts ยังไม่ได้ทดสอบ" ใน README 007–016 และคอมเมนต์หมายเหตุในเฉลย `.google.ts`
+- [ ] `grep -rn "TODO(6b)" lessons` ไม่เหลือ
+- เรื่องที่ต้องดูเป็นรายบท:
+  - 007: `ChatGoogle` คืน `content` เป็น array หรือ string · usage hook นับ token ของ `ChatGoogle` ได้ (ผ่าน `fetch(Request)`) · `model.model` ของ `ChatGoogle` คืนชื่อเดียวกับ `GOOGLE_MODEL`
+  - 008: ค่า `finishReason` จริง · `usage_metadata.output_tokens` ของ Gemini รวม thinking หรือไม่ เทียบกับ usage hook · `contentBlocks` ของ Gemini
+  - 009: Gemini รับ `{ role: "system" }` และ few-shot ที่มี ai message
