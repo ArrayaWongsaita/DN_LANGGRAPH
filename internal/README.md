@@ -39,9 +39,37 @@
 pnpm verify 001-006 --provider opencode-dev --repeat 3
 ```
 
-ผ่านด้วย `opencode-dev` แปลว่าโครงของบทและเกณฑ์ใน `internal/checks/` ใช้ได้ ไม่ได้แปลว่าผ่านกับ Google หรือ Ollama Cloud ต้องรันตามหัวข้อ 4 ก่อนปล่อยเสมอ
+ผ่านด้วย `opencode-dev` แปลว่าโครงของบทและเกณฑ์ใน `internal/checks/` ใช้ได้ ไม่ได้แปลว่าผ่านกับ Google หรือ Ollama Cloud ต้องรันตามหัวข้อ 5 ก่อนปล่อยเสมอ
 
-## 3. Branch `solutions` และลำดับการแก้
+## 3. ข้อมูลร้าน `src/shop/`, zod และ structured output
+
+ช่วงที่ 3 เริ่มใช้ข้อมูลร้านจริงและให้ผู้เรียนเขียน schema เอง ข้อตกลงต่อไปนี้ใช้กับบทหลังจากนี้ด้วย
+
+### ข้อมูลร้าน `src/shop/`
+
+- แยกเป็น `types.ts` (ชนิดข้อมูลกับป้ายไทย), `products.ts`, `customers.ts`, `orders.ts` และ `reset.ts` ไม่มี `index.ts` บทจึง import จากไฟล์ที่ใช้ตรงๆ เช่น `import { getOrder } from "../../src/shop/orders"`
+- ข้อมูลตั้งต้นอยู่ในหน่วยความจำของโมดูล (ไม่มีฐานข้อมูล) ฟังก์ชันที่คืนข้อมูลคืน **สำเนา** ด้วย `structuredClone` ผู้เรียนแก้ผลลัพธ์ได้โดยไม่ทำข้อมูลกลางเสีย
+- `resetShop()` คืนทั้งสินค้าและคำสั่งซื้อเป็นชุดตั้งต้น ใช้เมื่อรันซ้ำหรือใน test (`products.test.ts`, `orders.test.ts`) ไม่ได้ใช้ในบท
+- `getOrder(orderId, customerId)` ต้องได้ทั้งรหัสคำสั่งซื้อและรหัสลูกค้า คืน `undefined` ทั้งกรณีไม่มีคำสั่งซื้อนั้นและกรณีเป็นของลูกค้าคนอื่น (ไม่บอกว่ามีอยู่จริง) · ตัดช่องว่างหัวท้ายและไม่สนตัวพิมพ์เล็กใหญ่ · รหัสลูกค้าในบทมาจากระบบหรือค่าคงที่ของบท ห้ามให้โมเดลเลือกเจ้าของ ไม่งั้นโมเดลจะขอดูคำสั่งซื้อของคนอื่นได้
+- `searchProducts` ค้นแบบ substring: แยก keyword ด้วยช่องว่าง ทุกคำต้องปรากฏในชื่อ + tags + ป้ายหมวด (ไม่ค้นใน `description` และไม่ใช่ fuzzy) · `keyword`, `category`, `maxPrice` ที่เป็น `null` หรือ `undefined` แปลว่าไม่กรอง field นั้น
+- **ห้ามคัดลอกข้อมูลสินค้าหรือคำสั่งซื้อลงในบท** ให้เรียกฟังก์ชันของ `src/shop` หรือสร้างข้อความจากผลของฟังก์ชัน ไม่งั้นราคาและสถานะในบทจะค้างเมื่อข้อมูลกลางเปลี่ยน
+
+### zod
+
+- zod `~4.6.7` และ import แบบ `import * as z from "zod"` (`z.config`, `z.locales.th`, `z.prettifyError`, `z.toJSONSchema` อยู่บน namespace นี้)
+- ข้อความ error ของ zod ต้องเป็นภาษาไทย: ไฟล์ที่พิมพ์ error เรียก `z.config(z.locales.th())` ครั้งเดียวหลัง import รวมถึงไฟล์ schema ที่ใช้ร่วมกัน (เช่น `lessons/020-json-and-zod/search-filter.ts`) · ถ้าลืม ข้อความจะเป็นภาษาอังกฤษและไม่ตรงกับ "ผลที่ควรเห็น"
+- `.optional()` แปลว่า "ไม่ส่ง field นี้มา" ไม่ได้แปลว่า "ส่ง `null` มา" บท 020 สอนเรื่องนี้ตรงๆ ว่า `null` ไม่ผ่าน zod
+- **placeholder ของ schema ในแบบฝึกหัด:** ใช้ `z.custom<T>()` ที่ยอมทุกค่า หรือ schema ที่หลวมกว่า แล้วมี guard ที่ `safeParse` ตัวอย่างที่ถูกต้องแล้ว **ต้องไม่ผ่าน** จึงหยุดก่อนเรียกโมเดล (ดู `buildSchema` ของบท 020 exercise-1, `productIdField` / `cartSchema` ของบท 021, `describeFailure` / `classifyWithRetry` ของบท 022) · ถ้า placeholder ผ่านตัวอย่างที่ถูกต้อง guard จะไม่ทำงานและผู้เรียนใช้ค่าผิดโดยไม่รู้ตัว
+
+### structured output
+
+- ไฟล์ `.ollama` ส่ง `{ method: "functionCalling" }` เสมอ เพราะ Ollama Cloud ไม่รับ schema ทาง `format` (`jsonSchema`) · ไฟล์ `.google` ส่งแค่ `{ name: … }` เพราะ `ChatGoogle` ใช้ `functionCalling` ที่บังคับ `tool_choice` เป็นค่าเริ่มต้น
+- `ChatOllama` ไม่มี `tool_choice` บทจึงต้องเขียนชื่อเครื่องมือใน system message (เช่น `CLASSIFY_SYSTEM` ของบท 022) และถือว่าโมเดลอาจตอบเป็นข้อความธรรมดาจนได้ `undefined` เป็นเรื่องปกติที่บทต้องอธิบายได้
+- shim `internal/dev/opencode-shim.ts` ส่ง `tools` ต่อตามที่ได้และ **ไม่เติม `tool_choice`** · ผลทดลอง Task 3 (deepseek ผ่าน shim) อยู่หัวข้อ "structured output ผ่าน opencode shim (แผน 3)" ใน [`spikes.md`](./spikes.md): ได้ object 5/5 และไม่มี `null` ใน field ที่ `.optional()` จึงคง `.optional()` ไม่เปลี่ยนเป็น `.nullish()` · ผลนี้ยังต้องยืนยันกับ Ollama และ Gemini จริงใน 6b-12
+- `includeRaw: true` กับ `.batch()` ของ `@langchain/core` 1.4.1: `includeRaw` ประกอบ chain ด้วย `withFallbacks` (fallback คืน `parsed: null`) และ `RunnableWithFallbacks.batch()` รัน fallback ให้ทุก input เมื่อมีข้อเดียวล้ม `parsed` ของทุกข้อจึงเป็น `null` บท 022 จึงเรียก `invoke` ทีละข้อ (ทั้ง example และแบบฝึกหัด 1) เพราะต้องบอกได้ว่าข้อไหนผิด — บทที่ต้องรายงานรายข้อห้ามใช้ `.batch` กับ `includeRaw`
+- `describeFailure` ของบท 022 ตรวจ args ด้วย `StrictQuestion` (= `CustomerQuestion` + `summary.max(15)`) ไม่ใช่ `CustomerQuestion` เพราะ `CustomerQuestion.safeParse` ผ่านพอดีกับ args ที่ล้มในขั้นของ schema ที่เข้มกว่า
+
+## 4. Branch `solutions` และลำดับการแก้
 
 `solutions` คือ `main` บวกเฉลยของแบบฝึกหัดทุกข้อ (แทนที่บรรทัด 👉 ด้วยโค้ดจริง พร้อมคอมเมนต์ภาษาไทยว่า "ทำไม" และไม่เหลือ 👉) ผู้เรียนอ่านบนเว็บ GitHub ได้โดยไม่ต้อง checkout
 
@@ -80,6 +108,22 @@ pnpm renumber remove 012             # หลังลบโฟลเดอร�
   3. `git merge main` ใน worktree นั้น
   4. conflict จะอยู่ใน `lessons/*/exercise-*` เท่านั้น ให้ใช้ฝั่งเฉลย: `git diff --name-only --diff-filter=U | xargs git checkout --ours` แล้ว `git add -A` และ commit (อย่าเลือก `--theirs` เพราะจะเอา 👉 กลับมา)
   5. `pnpm check` (มีกฎจับ `pnpm lesson MMM` ที่เลขไม่ตรงบท) และ `pnpm test` ต้องผ่าน
+- **ทดลองก่อนเลื่อนเลขจริง:** ทำใน clone ทิ้งจาก commit ปัจจุบัน (ไม่แตะ repo และไม่ต้องใช้ key)
+
+  ```bash
+  N=017
+  TRIAL="$(mktemp -d)/trial"
+  git clone --quiet --local . "$TRIAL" && cd "$TRIAL"
+  pnpm install --offline --frozen-lockfile
+  pnpm renumber insert $N
+  mkdir "lessons/$N-new"
+  printf '# บทแทรก\n\n## จบบทนี้แล้วทำอะไรได้\n\n## เชื่อมกับที่รู้แล้ว\n\n## เนื้อหา\n\n## จุดที่มักพลาด\n\n## วิธีรัน\n\n## ผลที่ควรเห็น\n\n## แบบฝึกหัด\n\n## อ่านเพิ่ม\n' > "lessons/$N-new/README.md"
+  pnpm check && pnpm test
+  cd - && rm -rf "$(dirname "$TRIAL")"
+  ```
+
+  บทใหม่ต้องมี README ครบหัวข้อที่ `pnpm check` บังคับ (8 หัวข้อ ยังไม่ต้องมี `## เปิดดูใน Studio` เพราะเริ่มบท 046) และไม่มีไฟล์รัน จึงไม่ต้องมี `internal/checks/NNN.ts` · ต้องขึ้น `โครงคอร์สถูกต้อง` และ test ผ่านทั้งหมด · ทำ 2 รอบคือเลขที่อยู่กลางช่วงและเลขต้นๆ ที่ข้ามค่าคงที่ทุกตัว
+- **ผลหลังมีบท 017–022** (clone ใหม่จาก commit ของ Task 10 · `insert 017` และ `insert 002`): ทั้ง 2 รอบขึ้น `โครงคอร์สถูกต้อง` และ test ผ่าน 407/407 · รอบ `insert 002` เลื่อนค่าคงที่ครบทุกตัว (`SETUP_LESSON`, `ENV_LESSON`, `STUDIO_FROM`, `PROVIDER_PAIRS_FROM`/`TO`) โดยไม่ต้องแก้ test
 
 ห้าม push จนกว่าจะครบเงื่อนไขในเอกสารออกแบบข้อ 5.14 แล้วจึง push `main` และ `solutions` พร้อมกันครั้งเดียว
 
@@ -95,7 +139,7 @@ pnpm renumber remove 012             # หลังลบโฟลเดอร�
 
 **บทที่ใช้ `ask()` (แชทบอท):** ใส่ `input` ใน `internal/checks/NNN.ts` เป็นอาร์เรย์ของบรรทัด เช่น `input: ["สวัสดี", "จบ"]` runner จะเขียนทีละบรรทัดลง stdin แล้วปิด stdin · `ask()` คืน `null` เมื่อ input หมด บทจึงต้องจบเองด้วย exit 0 ได้แม้ไม่มี `จบ` (ดู `internal/checks/016.ts` ที่ตั้งใจไม่ใส่ `จบ` ในบางเคส)
 
-## 4. `pnpm check` และ `pnpm verify`
+## 5. `pnpm check` และ `pnpm verify`
 
 **`pnpm check`** ไม่ใช้ token และรันใน CI: ตรวจโครงบท (ชื่อโฟลเดอร์ 3 หลัก, README 9 หัวข้อ, คู่ไฟล์ `.ollama`/`.google` ของบท 006-027, ไม่มีชื่อโมเดลหรือค่าคล้าย key ในโค้ด ฯลฯ) แล้วตามด้วย `tsc --noEmit` และ `eslint` ต้องผ่านทั้งบน `main` และ `solutions`
 
@@ -119,9 +163,9 @@ pnpm verify [NNN | NNN-NNN] --provider <google|ollama-cloud|ollama|opencode-dev>
 | Ollama ในเครื่อง บทหลังจากนั้น | รัน 1 รอบเพื่อหาปัญหาเฉพาะในเครื่อง ถ้าไม่ผ่านเพราะโมเดลเล็กเกินไป ให้เขียนไว้ใน README ของบทนั้นโดยไม่ต้องแก้บท |
 | บทเรื่องยิงพร้อมกันหรือ 429 (014, 055, 059, 117) | เกณฑ์ตรวจว่า "จำนวนงานพร้อมกันไม่เกิน `maxConcurrency`" ไม่ตรวจว่า "ต้องเจอ 429" |
 
-ถ้าไม่ผ่านให้ดูก่อนว่าผิดที่โค้ดบทหรือที่เกณฑ์ แก้บน `main` แล้ว merge ไป `solutions` ตามหัวข้อ 3
+ถ้าไม่ผ่านให้ดูก่อนว่าผิดที่โค้ดบทหรือที่เกณฑ์ แก้บน `main` แล้ว merge ไป `solutions` ตามหัวข้อ 4
 
-## 5. ก่อนสอนแต่ละรอบ
+## 6. ก่อนสอนแต่ละรอบ
 
 1. เลือก API หลักของรอบนั้น: Google หรือ Ollama Cloud (เลือกเจ้าที่คุ้มค่าและโควต้าพอสำหรับจำนวนผู้เรียน)
 2. อัปเดตชื่อโมเดลใน `.env.example` (และ README บท 003-005) ถ้ารุ่นเดิมถูกถอด

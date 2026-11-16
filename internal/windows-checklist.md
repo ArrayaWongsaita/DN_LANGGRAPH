@@ -141,6 +141,10 @@ pnpm lesson 6 example.google.ts
   - ทำซ้ำทั้ง 3 ข้อใน Windows Terminal, terminal ของ VS Code และหน้าต่าง PowerShell แบบเก่า
 - [ ] pipe ข้อความไทยเข้าแชทบอท: `"สวัสดี ฉันชื่อสมชาย", "จบ" | pnpm lesson 016 example.ollama` ใน Windows PowerShell 5.1 และใน PowerShell 7 · จดว่าข้อความไทยที่โปรแกรมพิมพ์ย้อนกลับ (`คุณ: ...`) เพี้ยนไหม (README บท 016 บอกว่า 5.1 อาจเพี้ยนตาม `$OutputEncoding` ส่วนการพิมพ์เองไม่เพี้ยน) · ลองตั้ง `$OutputEncoding = [System.Text.Encoding]::UTF8` ก่อนแล้วเทียบผล
 
+## ทดสอบเมื่อถึงแผนที่ 3: error ของ zod เป็นภาษาไทย
+
+- [ ] `pnpm lesson 020 example.google` (หรือ `pnpm lesson 020 example.ollama` ถ้ามี Ollama) → ขั้นที่ 1 ขึ้น `✖` พร้อม `→ at maxPrice` และ `→ at keyword` ของ error zod · ภาษาไทยไม่เพี้ยน (ไม่มี `?` หรือกล่องสี่เหลี่ยม) ไม่มี stack trace ภาษาอังกฤษหลุดมา
+
 ## ทดสอบเมื่อถึงแผนที่ 6: `pnpm studio NNN`
 
 - [ ] `pnpm studio 046` → server เปิด และพิมพ์ลิงก์ Studio
