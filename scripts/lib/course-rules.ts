@@ -213,3 +213,26 @@ export function checkVerifyCoverage(root: string): Problem[] {
   }
   return problems;
 }
+
+// คำสั่ง `pnpm lesson MMM` ในโค้ดของบท NNN ต้องชี้เลขบทของตัวเอง ไม่งั้นเลขค้างหลัง renumber/merge จะสอนให้รันผิดบท
+// ตรวจเฉพาะไฟล์ .ts (README อ้างถึงบทอื่นได้ เช่น 005 ชี้ไปบท 002)
+export function checkLessonRunNumbers(root: string): Problem[] {
+  const problems: Problem[] = [];
+  for (const lesson of lessons(root)) {
+    for (const file of walk(lesson.dir, (n, d) => d && SKIP_DIRS.has(n))) {
+      if (!/\.ts$/.test(file)) continue;
+      for (const { text, line } of lines(file)) {
+        for (const m of text.matchAll(/pnpm lesson (\d{3})(?!\d)/g)) {
+          if (m[1] !== lesson.number) {
+            problems.push({
+              file: rel(root, file),
+              line,
+              message: `คำสั่ง pnpm lesson ${m[1]} ในไฟล์ของบท ${lesson.number} ต้องเป็น pnpm lesson ${lesson.number} (เลขบทค้างหลังเลื่อนเลข?)`,
+            });
+          }
+        }
+      }
+    }
+  }
+  return problems;
+}

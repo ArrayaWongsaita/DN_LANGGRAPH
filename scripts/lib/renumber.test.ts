@@ -131,6 +131,26 @@ describe("planRenumber / applyRenumber", () => {
     expect(read("docs/a.md")).toBe("บท 002\n");
   });
 
+  it("insert renames checks-NNN.test.ts and keeps imports and lesson tokens consistent", () => {
+    fixture();
+    write(
+      "internal/verify/checks-003.test.ts",
+      'import checks from "../checks/003";\nconst r = { lesson: "003" };\ndescribe("เกณฑ์ตรวจบท 003", () => {});\nconst s = "500";\n',
+    );
+    write("internal/verify/other.test.ts", 'import x from "../checks/003";\n');
+    const r = planRenumber(root, { kind: "insert", at: 2 });
+    if (!r.ok) throw new Error(r.message);
+    applyRenumber(root, r.plan);
+    expect(names("internal/verify")).toEqual(["checks-004.test.ts", "other.test.ts"]);
+    const t = read("internal/verify/checks-004.test.ts");
+    expect(t).toContain('from "../checks/004"');
+    expect(t).toContain('lesson: "004"');
+    expect(t).toContain("บท 004");
+    expect(t).toContain('"500"');
+    expect(fs.existsSync(path.join(root, "internal/checks/004.ts"))).toBe(true);
+    expect(read("internal/verify/other.test.ts")).toBe('import x from "../checks/003";\n');
+  });
+
   it("remove at 2", () => {
     fixture();
     fs.rmSync(path.join(root, "lessons/002-b"), { recursive: true });
