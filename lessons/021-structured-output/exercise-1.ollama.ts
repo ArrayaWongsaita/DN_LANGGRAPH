@@ -1,13 +1,8 @@
-// แบบฝึกหัด 1: บังคับให้รหัสสินค้ามีจริงด้วย .refine
+// เฉลยแบบฝึกหัด 1: บังคับให้รหัสสินค้ามีจริงด้วย .refine
 //
 // โจทย์: เติม productIdField() ให้คืน z.string() ที่ .refine ว่า getProduct(id) มีสินค้าอยู่จริง (ข้อความ "ไม่มีสินค้ารหัสนี้ในร้าน")
 // ไฟล์ขอให้โมเดลแนะนำสินค้า 1 ชิ้นผ่านเครื่องมือ recommend_product โดยเห็นข้อมูลสินค้าทุกชิ้นใน system
-//
-// แนวทาง:
-// 1. .refine((id) => getProduct(id) !== undefined, { message: "ไม่มีสินค้ารหัสนี้ในร้าน" }) ต่อท้าย z.string()
-// 2. .refine ทำงานตอนตรวจผลบนเครื่องเรา โมเดลไม่เห็นเงื่อนไขนี้ (ต่างจาก .describe ที่โมเดลเห็น)
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ productIdField คืน z.string() ที่ยอมทุกค่า (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 021 exercise-1.ollama
+// รัน: pnpm lesson 021 exercise-1.ollama
 import { OutputParserException } from "@langchain/core/output_parsers";
 import { ChatOllama } from "@langchain/ollama";
 import * as z from "zod";
@@ -33,8 +28,11 @@ const model = new ChatOllama({
 });
 
 function productIdField(): z.ZodString {
-  // 👉 เติม .refine ว่า getProduct(id) !== undefined (แทนบรรทัด return z.string())
-  return z.string();
+  // เฉลยจุดที่ 1: ตรวจรหัสกับข้อมูลสินค้าจริงของร้านด้วย getProduct ไม่ใช่ดูแค่รูปแบบ
+  // ทำไมไม่ใช้ regex: "P999" รูปแบบถูกทุกตัวอักษรแต่ไม่มีสินค้านี้ในร้าน .refine ที่เรียก getProduct จึงจับได้
+  // .refine ทำงานตอน LangChain ตรวจผลบนเครื่องเรา โมเดลไม่เห็นเงื่อนไขนี้ (ต่างจาก .describe ที่ไปอยู่ใน JSON Schema ของเครื่องมือ)
+  // ถ้าโมเดลเดารหัสที่ไม่มีจริง zod จะไม่ผ่านแล้ว LangChain โยน OutputParserException ซึ่งไฟล์นี้จับและพิมพ์ "แปลงไม่สำเร็จ" ไว้แล้ว
+  return z.string().refine((id) => getProduct(id) !== undefined, { message: "ไม่มีสินค้ารหัสนี้ในร้าน" });
 }
 
 const Recommend = z.object({
@@ -45,12 +43,6 @@ const Recommend = z.object({
 type Recommendation = z.infer<typeof Recommend>;
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ productIdField ยังไม่ตรวจรหัส (ไม่เสีย token)
-  if (productIdField().safeParse("P999").success) {
-    console.log("👉 ยังไม่ได้เติม productIdField (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่า .refine ทำงานจริง
   console.log(`ตรวจตัวอย่าง: P001 → ${productIdField().safeParse("P001").success ? "ผ่าน" : "ไม่ผ่าน"}`);
   console.log(`ตรวจตัวอย่าง: P999 → ${productIdField().safeParse("P999").success ? "ผ่าน" : "ไม่ผ่าน"}`);

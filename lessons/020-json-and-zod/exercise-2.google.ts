@@ -1,13 +1,9 @@
-// แบบฝึกหัด 2: เปิด JSON mode ให้โมเดลตอบ JSON เปล่า
+// เฉลยแบบฝึกหัด 2: เปิด JSON mode ให้โมเดลตอบ JSON เปล่า
 //
 // โจทย์: เติม jsonModeOptions() ให้คืนตัวเลือกที่เปิด JSON mode ของ ChatGoogle คือ `responseMimeType: "application/json"`
 // ไฟล์สร้างโมเดลด้วยตัวเลือกเดิม + jsonModeOptions() แล้วถามคำถามชุดเดียวกับตัวอย่าง โดยไม่ใช้ extractJson (ต้อง JSON.parse ตรงๆ ได้)
-//
-// แนวทาง:
-// 1. ดูชนิด ChatGoogleParams ใน @langchain/google: field `responseMimeType` รับ string ("application/json" คือ JSON mode ของ Gemini)
-// 2. คืน object ที่มี field นั้นเพียงตัวเดียว ฟังก์ชันคืน Partial<ChatGoogleParams> จึงใส่เฉพาะที่เพิ่มได้
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ jsonModeOptions คืน {} (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 020 exercise-2.google
+// รัน: pnpm lesson 020 exercise-2.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
 import { ChatGoogle, type ChatGoogleParams } from "@langchain/google";
 import * as z from "zod";
 import { env } from "../../src/lib/env";
@@ -24,8 +20,11 @@ const SYSTEM = [
 ].join("\n");
 
 function jsonModeOptions(): Partial<ChatGoogleParams> {
-  // 👉 คืนตัวเลือกที่เปิด JSON mode ของ Gemini (แทนบรรทัด return {})
-  return {};
+  // เฉลยจุดที่ 1: Gemini เปิด JSON mode ด้วย field `responseMimeType` ค่า "application/json"
+  // prompt ที่บอกให้ตอบ JSON อย่างเดียวไม่พอ: โมเดลยังห่อด้วย ```json หรือเติมข้อความนำได้ JSON mode บังคับที่ตัวโมเดล
+  // คืนเป็น Partial จึงใส่เฉพาะตัวเลือกที่เพิ่ม แล้ว spread ต่อท้ายตัวเลือกเดิมของโมเดลข้างล่าง
+  // JSON mode รับประกันแค่ว่า "เป็น JSON ที่ JSON.parse ผ่าน" ไม่ได้รับประกันว่าตรง schema (ยังต้องตรวจด้วย zod)
+  return { responseMimeType: "application/json" };
 }
 
 const model = new ChatGoogle({
@@ -35,12 +34,6 @@ const model = new ChatGoogle({
 });
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ยังไม่ได้เปิด JSON mode (ไม่เสีย token)
-  if (Object.keys(jsonModeOptions()).length === 0) {
-    console.log("👉 ยังไม่ได้เติม jsonModeOptions (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่าเปิด JSON mode จริง
   console.log(`ตรวจตัวอย่าง: ตัวเลือกที่เพิ่ม ${JSON.stringify(jsonModeOptions())}`);
 

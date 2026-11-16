@@ -1,13 +1,8 @@
-// แบบฝึกหัด 1: ตรวจ JSON ของคำสั่งซื้อด้วย zod
+// เฉลยแบบฝึกหัด 1: ตรวจ JSON ของคำสั่งซื้อด้วย zod
 //
 // โจทย์: เติม buildSchema() ให้คืน schema ของ OrderRequest โดย orderId ต้องตรง /^O\d{4}$/ และมี .describe
 // ไฟล์ขอให้โมเดลแปลงข้อความลูกค้าเป็น OrderRequest แล้วตรวจด้วย schema ก่อนเอา orderId ไปถามสถานะ (ของลูกค้า C001 เท่านั้น)
-//
-// แนวทาง:
-// 1. ห่อด้วย z.object({...}) โดย action เป็น z.enum(["cancel", "refund", "status"]) และ reason เป็น z.string().optional()
-// 2. orderId ใช้ z.string().regex(/^O\d{4}$/) แล้วต่อ .describe(...) บอกว่าเป็นรหัสคำสั่งซื้อ รูปแบบ O ตามด้วยเลข 4 หลัก
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ buildSchema คืน z.custom<OrderRequest>() ที่ยอมทุกค่า (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 020 exercise-1.ollama
+// รัน: pnpm lesson 020 exercise-1.ollama
 import { ChatOllama } from "@langchain/ollama";
 import * as z from "zod";
 import { env, optionalEnv } from "../../src/lib/env";
@@ -53,18 +48,21 @@ const model = new ChatOllama({
 });
 
 function buildSchema(): z.ZodType<OrderRequest> {
-  // 👉 คืน schema ของ OrderRequest: action เป็น enum, orderId ตรง /^O\d{4}$/ พร้อม .describe, reason ไม่บังคับ (แทนบรรทัด return ด้านล่าง)
-  return z.custom<OrderRequest>();
+  // เฉลยจุดที่ 1: เขียน schema ให้ตรงกับ interface OrderRequest ทั้ง 3 field แล้วผูก type ไว้ด้วย z.ZodType<OrderRequest>
+  // เพื่อให้ compiler เตือนทันทีถ้า schema กับ interface ไม่ตรงกัน (ลืม field หรือเปลี่ยนชื่อ)
+  // action ใช้ z.enum ไม่ใช่ z.string(): ค่าที่ผ่าน zod จะถูกเอาไปใช้ต่อ คำตอบอย่าง "delete" จึงต้องไม่ผ่านตั้งแต่ต้นทาง
+  // orderId ต้องมี .regex(/^O\d{4}$/): โมเดลชอบตอบเลขล้วน ("1002") แล้ว getOrder หาไม่เจอโดยไม่มีใครรู้สาเหตุ
+  // reason เป็น .optional() ตาม interface: ข้อความที่ลูกค้าไม่ได้บอกเหตุผลต้องผ่านได้
+  // .describe ยังไม่ถูกส่งให้โมเดลในบทนี้ (prompt เขียนรูปแบบ JSON เอง) แต่ทำให้อ่าน schema แล้วรู้ว่าช่องไหนคืออะไร
+  return z.object({
+    action: z.enum(["cancel", "refund", "status"]).describe("สิ่งที่ลูกค้าอยากให้ทำกับคำสั่งซื้อ"),
+    orderId: z.string().regex(/^O\d{4}$/).describe("รหัสคำสั่งซื้อ รูปแบบ O ตามด้วยเลข 4 หลัก"),
+    reason: z.string().optional().describe("เหตุผลที่ลูกค้าบอก ใส่เฉพาะเมื่อลูกค้าพูดถึง"),
+  });
 }
 
 export async function main(): Promise<void> {
   const schema = buildSchema();
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ schema ยังไม่ทำงาน (ไม่เสีย token)
-  if (schema.safeParse({ action: "cancel", orderId: "1002" }).success) {
-    console.log("👉 ยังไม่ได้เติม buildSchema (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่า schema แยกตัวอย่างที่ถูกกับผิดได้จริง
   for (const sample of SAMPLES) {
     console.log(`ตรวจตัวอย่าง: ${JSON.stringify(sample)} → ${schema.safeParse(sample).success ? "ผ่าน" : "ไม่ผ่าน"}`);
