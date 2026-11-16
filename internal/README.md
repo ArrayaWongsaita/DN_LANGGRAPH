@@ -29,6 +29,8 @@
 
 - `internal/dev/opencode-shim.ts` เปิดเซิร์ฟเวอร์ HTTP ในเครื่องที่ **พูดภาษา Ollama (`/api/chat`)** แล้วแปลงคำขอไปเรียก API ของ opencode (รูปแบบ OpenAI-compatible) แล้วแปลงคำตอบกลับเป็นรูปแบบ Ollama (`message.content`, `prompt_eval_count`, `eval_count`) ตัวแปลอยู่ใน `internal/dev/opencode-translate.ts`
 - บทต่างๆ จึงยิงมาที่ shim เหมือนยิง Ollama จริง ใช้ได้เฉพาะไฟล์ `.ollama` (ไม่มีทางทดสอบไฟล์ `.google` ผ่าน shim)
+- **shim เลียนได้:** `/api/chat` แบบข้อความธรรมดา, จำนวน token (`prompt_eval_count`, `eval_count`), การ stream (ส่งเป็น NDJSON ชิ้นเดียวหลายก้อนจากคำตอบที่ได้ครบแล้ว), `think: false` (ส่ง `thinking: {type:"disabled"}` ซึ่งใช้ได้กับโมเดลตระกูล deepseek เท่านั้น) และ reasoning ที่แปลงเป็น field `thinking`
+- **shim เลียนไม่ได้ หรือไม่ตรงของจริง:** ไฟล์ `.google`, tool call และ structured output ที่ตรงกับ provider จริง, ขนาดและจังหวะของชิ้น stream จริง, error ของ provider (401/404/429 ข้อความจริง), เครดิตหมด และพฤติกรรมของ Ollama ในเครื่อง (เช่น `fetch failed`) · ข้อเหล่านี้อยู่ใน 6b ของ [`spikes.md`](./spikes.md) (รายละเอียดสิ่งที่ทดลองใน 6a อยู่หัวข้อ "ทำแล้ว (6a)")
 - header ที่ opencode บังคับ shim ใส่ให้เอง ผู้เรียนไม่ต้องทำและบทไม่ต้องมีโค้ดส่วนนี้
 - `pnpm verify` เปิด shim ให้เองเมื่อใช้ `--provider opencode-dev` และปิดตอนจบ ไม่ต้องรันแยก
 - ต้องมี `OPENCODE_API_KEY` และ `OPENCODE_DEV_MODEL` ใน `.env` (ตัวหลังคือชื่อโมเดลที่ opencode ให้ใช้)
@@ -61,11 +63,32 @@ cp ../LANGGRAPH/.env .env      # .env ไม่ถูก commit ต้องค�
 4. ใน worktree รัน `pnpm check` และ `pnpm verify` ของบทที่แก้ ให้ผ่านก่อนไปต่อ
 5. ห้ามแก้ไฟล์นอก `exercise-*` บน `solutions` เพื่อไม่ให้เกิด conflict ซ้ำๆ
 
+### เพิ่ม ลบ หรือสลับเลขบท: `pnpm renumber`
+
+```bash
+pnpm renumber insert 012 --dry-run   # ดูแผนก่อน ไม่แก้ไฟล์
+pnpm renumber insert 012             # เลื่อนบท 012 ขึ้นไปอีก 1 แล้วสร้างช่องว่างให้บทใหม่
+pnpm renumber remove 012 --dry-run
+pnpm renumber remove 012             # ลบโฟลเดอร์บท 012 แล้วเลื่อนบทหลังจากนั้นลง 1
+```
+
+- เปลี่ยนชื่อโฟลเดอร์ `lessons/NNN-*`, ไฟล์ `internal/checks/NNN.ts`, เลขบทใน README (ตารางสารบัญและลิงก์) และเลขที่ฝังในไฟล์ allowlist 3 ไฟล์: `src/lib/env.ts`, `scripts/lib/doctor-checks.ts`, `scripts/lib/course-rules.ts` · ไม่แตะไฟล์อื่น (เช่น `.env.example` และเอกสารออกแบบ) ต้องตรวจเอง · ตอน `remove` ที่อ้างถึงบทที่ถูกลบจะถูกรายงาน (⚠️) ให้แก้เอง
+- ปฏิเสธเมื่อ working tree ไม่สะอาด, เลขชนกัน หรือบางขั้นล้มเหลว ใช้ `--dry-run` ก่อนทุกครั้ง
+- รันบน `main` แล้ว commit ผลบน `main` จากนั้น `git -C ../LANGGRAPH-solutions merge main` git ตามการเปลี่ยนชื่อไฟล์ได้เอง ถ้า conflict ใน `exercise-*` ให้เก็บโค้ดเฉลย แล้ว `pnpm check` กับ `pnpm test` ใน worktree
+
 ห้าม push จนกว่าจะครบเงื่อนไขในเอกสารออกแบบข้อ 5.14 แล้วจึง push `main` และ `solutions` พร้อมกันครั้งเดียว
+
+### กฎชื่อไฟล์ที่รันได้
+
+ไฟล์ที่ผู้เรียนรันได้ต้องตรงรูปแบบ `example` หรือ `exercise-N` ตามด้วย `.ollama` หรือ `.google` (บท 006 ขึ้นไปต้องมีทั้งคู่) เช่น `example.ollama.ts`, `exercise-2.google.ts` · ไฟล์ที่ชื่อขึ้นต้น `example`/`exercise` แต่ไม่ตรงรูปแบบ ทำให้ `pnpm check` ไม่ผ่าน (จะไม่ถูกรัน) · ไฟล์ helper ที่ไม่ใช่ตัวรันให้ตั้งชื่อไม่ขึ้นต้นด้วย `example`/`exercise` เช่น `helpers.ts` (ถูกยกเว้น ไม่ต้องมี check) และไฟล์ `*.test.ts` ถูกยกเว้นเช่นกัน · เลขบทซ้ำทำให้ `pnpm check` และ `pnpm verify` หยุดพร้อมบอกโฟลเดอร์ที่ชน
 
 ### แบบฝึกที่ยังไม่เสร็จ
 
 บน `main` ไฟล์ `exercise-*` ที่ยังไม่เติมจะ **พิมพ์ข้อความ 👉 บอกว่ายังต้องเติมอะไร แล้วจบด้วย exit 0** โดยไม่ยิง API (ไม่เสีย token) และเมื่อ `pnpm lesson` เจอ 👉 ในไฟล์จะขึ้นคำเตือน ⚠️ ด้วย ดังนั้นสถานะ "ยังไม่เติม" ไม่ใช่ error เวลาเขียนแบบฝึกใหม่ต้องใส่ guard ตามแบบนี้ และเกณฑ์ใน `internal/checks/` ใช้กับไฟล์บน `solutions` (ที่เติมแล้ว) ไม่ใช่ไฟล์บน `main`
+
+**กฎ guard (ตั้งแต่บท 007):** ทุก `exercise-*.ts` ที่ยังมี `// 👉` ต้องพิมพ์ข้อความ 👉 ภาษาไทยที่บอกว่าต้องเติมอะไร แล้วจบด้วย exit 0 โดยไม่เรียกโมเดลและไม่ยิงเครือข่าย (นับ 👉 เฉพาะที่ขึ้นต้น `// 👉`) · `internal/verify/lesson-guards.test.ts` (รันใน `pnpm test`) รันไฟล์เหล่านั้นทุกไฟล์ในบท 007 ขึ้นไปโดยตั้ง base URL ปลอมและ hook นับ `fetch` แล้วล้มถ้า exit ไม่ใช่ 0, ไม่มี 👉 ในผลที่พิมพ์ หรือมีการเรียกเครือข่าย · ตัวเริ่มคือ `EXERCISE_GUARD_FROM` ใน `scripts/lib/course-rules.ts` (บท 006 ไม่ถูกตรวจ เพราะ `exercise-2` ของ 006 ยิง API ตอนยังไม่เติม)
+
+**บทที่ใช้ `ask()` (แชทบอท):** ใส่ `input` ใน `internal/checks/NNN.ts` เป็นอาร์เรย์ของบรรทัด เช่น `input: ["สวัสดี", "จบ"]` runner จะเขียนทีละบรรทัดลง stdin แล้วปิด stdin · `ask()` คืน `null` เมื่อ input หมด บทจึงต้องจบเองด้วย exit 0 ได้แม้ไม่มี `จบ` (ดู `internal/checks/016.ts` ที่ตั้งใจไม่ใส่ `จบ` ในบางเคส)
 
 ## 4. `pnpm check` และ `pnpm verify`
 
@@ -79,6 +102,7 @@ pnpm verify [NNN | NNN-NNN] --provider <google|ollama-cloud|ollama|opencode-dev>
 
 - รันทั้งตัวอย่างและเฉลยของบท แล้วตรวจกับ `internal/checks/NNN.ts` (ตรวจโครงของผล ไม่ตรวจถ้อยคำของโมเดล เพราะคำตอบเปลี่ยนทุกครั้ง)
 - บทที่ไม่มีไฟล์ให้รัน (เช่น 001, 003, 004, 005) ขึ้น `– ไม่มีไฟล์ให้รัน`
+- **จบด้วย exit 1 เมื่อรันได้ 0 รอบ** ทุกกรณี (พิมพ์เลขบทผิดหรือช่วงที่มีแต่บทอ่าน เช่น `003-005`) เพื่อไม่ให้ดูเหมือนผ่าน · `internal/checks/NNN.ts` ที่ import พัง ทำให้บทนั้นล้มเฉพาะบท ไม่ล้มทั้งรอบ
 - ท้ายผลพิมพ์ยอด token แยกตาม provider ให้จดไว้เทียบค่าใช้จ่าย
 
 **เกณฑ์ผ่าน (เอกสารออกแบบข้อ 5.10):**

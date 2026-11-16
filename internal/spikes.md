@@ -459,4 +459,7 @@
     - Ollama จริงอาจรายงานเฉพาะ token ที่ไม่ได้อยู่ใน cache ทำให้ N ตาที่ 2 ไม่มากกว่าตาที่ 1
     - ChatGoogle อาจใส่ usage_metadata สะสมมาทุกชิ้น ทำให้ concat รวมซ้ำ
     - ลองแชทด้วยมือกับ provider จริง (แผนนี้ไม่มีขั้นลองแชทด้วยมือ เพราะ shim เปิดได้ผ่าน `pnpm verify` เท่านั้น): `pnpm lesson 016 example.ollama` พิมพ์ไทย ลบตัวอักษรไทยด้วย Backspace กด Enter เปล่า แล้วพิมพ์ `จบ` โปรแกรมต้องจบเองและพิมพ์ `ลาก่อนครับ` · ลองซ้ำด้วย Ctrl+D (macOS) และ Ctrl+C
-    - รายการ `ask()` ใน `internal/windows-checklist.md` (หัวข้อ "ทดสอบเมื่อถึงแผนที่ 2") ครอบคลุมข้อที่เกี่ยวกับบท 016 บน Windows: Ctrl+D ใน PowerShell ไม่จบ, Ctrl+Z แล้ว Enter จบ, และ pipe ไทยจาก PowerShell 5.1 (Task 14 แก้ให้หัวข้อนั้นชี้มาที่บทนี้)
+    - รายการ `ask()` ใน `internal/windows-checklist.md` (หัวข้อ "ทดสอบเมื่อถึงแผนที่ 2") ครอบคลุมข้อที่เกี่ยวกับบท 016 บน Windows: Ctrl+D ใน PowerShell ไม่จบ, Ctrl+Z แล้ว Enter จบ, และ pipe ไทยจาก PowerShell 5.1
+    - ค่าที่ส่งต่อจากการรีวิว `ask()` (บท 016 บน Windows): pipe ภาษาไทยจาก PowerShell 5.1 (`"สวัสดี" | pnpm lesson 016 ...`) อาจเพี้ยนตาม `$OutputEncoding` และอาจมี BOM นำหน้า (พิมพ์เองใน terminal ไม่มีปัญหา) · Ctrl+D ใน PowerShell ไม่ใช่ EOF ต้องกด Ctrl+Z แล้ว Enter · จดผลไว้ใน "ผล 6b" · ผู้เรียนควรออกด้วยการพิมพ์ `จบ` หรือ Ctrl+C
+- เฉลย `exercise-*.google.ts` ของบท 007–016 บน `solutions` ทั้ง 22 ไฟล์ (007: 3 ไฟล์, 008–015: บทละ 2 ไฟล์ รวม 16, 016: 3) ยังไม่เคยรันกับ Gemini จริง ต้องรันตามข้อบน (solutions) ให้ผ่านก่อนลบหมายเหตุ
+- ไม่ต้องบันทึกอะไรของแผน 2 ใน `.superpowers/` ตอนทำ 6b: รายงานและ ledger ชั่วคราวอยู่ใน `.superpowers/sdd/` ไม่ commit · ผลจริงเขียนต่อท้าย "ผล 6b" ในไฟล์นี้เท่านั้น

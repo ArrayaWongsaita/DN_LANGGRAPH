@@ -6,13 +6,13 @@
 
 ตลอดคอร์สเราสร้าง **ผู้ช่วยร้าน DN Shop** ที่ค้นสินค้า ตอบนโยบายร้านจากเอกสาร ดูคำสั่งซื้อ และขอคืนเงินโดยมีคนอนุมัติ ตอนจบคอร์สเต็มรูปแบบวางแผนไว้ 152 บท 21 ช่วง (บวกภาคผนวก)
 
-> **สถานะ: กำลังจัดทำ** ตอนนี้ repo มีเฉพาะ **ช่วงที่ 1 (บท 001–006)** ช่วงที่ 2 เป็นต้นไปยังไม่มีในโฟลเดอร์ `lessons/` และจะทยอยเพิ่ม
+> **สถานะ: กำลังจัดทำ** ตอนนี้ repo มี **ช่วงที่ 1 (บท 001–006)** และ **ช่วงที่ 2 (บท 007–016)** ช่วงที่ 3 เป็นต้นไปยังไม่มีในโฟลเดอร์ `lessons/` และจะทยอยเพิ่ม
 
 เครื่องหมาย 🏫 ในสารบัญหมายถึงบทที่สอนในห้อง บทที่ไม่มี 🏫 ผู้เรียนอ่านและทำเองได้
 
 ## 1. ก่อนเริ่ม
 
-สิ่งที่ต้องมีสำหรับช่วงที่ 1:
+สิ่งที่ต้องมีสำหรับช่วงที่ 1–2:
 
 | สิ่งที่ต้องมี | ใช้ตั้งแต่บท | ค่าใช้จ่าย |
 |---|---|---|
@@ -79,6 +79,8 @@ pnpm preflight
 
 ถ้ายังมี 👉 เหลืออยู่ ตอนรันจะมีคำเตือนบอกว่ายังเหลืออีกกี่จุด
 
+ตั้งแต่บท 007 แบบฝึกที่ยังไม่เติมจะพิมพ์ 👉 บอกว่าต้องเติมอะไรแล้วหยุดทันที ไม่เรียกโมเดลและไม่เสีย token
+
 ## 5. วิธีรัน
 
 | คำสั่ง | ทำอะไร |
@@ -87,6 +89,7 @@ pnpm preflight
 | `pnpm lesson 002` | รัน `example.ts` ของบท 002 |
 | `pnpm lesson 002 exercise-1` | รันไฟล์ที่ระบุในบทนั้น ไม่ต้องพิมพ์ `.ts` |
 | `pnpm lesson 006 example.google` | บทที่มีหลายไฟล์ ให้ระบุชื่อไฟล์ (006 มีทั้ง `.ollama` และ `.google`) |
+| `pnpm lesson 016 example.ollama` | บทแชทบอทใน terminal พิมพ์ `จบ` เพื่อออก หรือกด Ctrl+D (Windows กด Ctrl+Z แล้ว Enter) |
 
 คำสั่งเหมือนกันทั้ง macOS และ PowerShell คำสั่งอื่นจะเพิ่มในตารางนี้เมื่อถึงบทที่ใช้
 
@@ -114,15 +117,31 @@ pnpm preflight
 | 005 🏫 | [`005-setup-google`](lessons/005-setup-google/README.md) | สร้าง API key ใน AI Studio, ดูลิมิตแผนฟรี, ข้อควรระวังเรื่องข้อมูล |
 | 006 ⭐🏫 | [`006-raw-fetch`](lessons/006-raw-fetch/README.md) | เรียก LLM ด้วย `fetch` ตรงๆ ทั้ง Ollama และ Gemini · เห็นว่าข้างใต้คือ HTTP + JSON |
 
+### ช่วงที่ 2: คุยกับโมเดลผ่าน LangChain
+
+จบช่วงนี้: คุยกับโมเดลผ่าน LangChain, อ่านผล, รับมือ error และลิมิต, ทำแชทบอทใน terminal
+
+| บท | โฟลเดอร์ | ฝึก |
+|---|---|---|
+| 007 🏫 | [`007-first-chat-model`](lessons/007-first-chat-model/README.md) | `ChatOllama` / `ChatGoogle`, `.invoke()` · อ่านคำตอบด้วย `.text` · อ่านชื่อโมเดลจาก `.env` · เทียบกับบท 006 |
+| 008 🏫 | [`008-ai-message`](lessons/008-ai-message/README.md) | อ่าน `AIMessage`: `usage_metadata`, `response_metadata`, `contentBlocks` รูปแบบกลางของทุก provider |
+| 009 🏫 | [`009-messages-roles`](lessons/009-messages-roles/README.md) | system / human / ai · รูปย่อ `{ role, content }` · system message เปลี่ยนนิสัยโมเดล |
+| 010 🏫 | [`010-model-params`](lessons/010-model-params/README.md) | `temperature`, `maxTokens` · รันซ้ำแล้วดูความต่าง · Gemini รุ่นใหม่เลิกใช้ `temperature` |
+| 011 🏫 | [`011-thinking`](lessons/011-thinking/README.md) | โมเดลที่คิดก่อนตอบ · ปิดหรือลดการคิด · ดู reasoning block · ผลต่อเวลาตอบ |
+| 012 🏫 | [`012-errors`](lessons/012-errors/README.md) | อ่าน error: ลืมเปิด Ollama, ยังไม่ได้ `pull` โมเดล, ชื่อโมเดลผิด, key ผิด, โมเดลไม่รองรับ tool |
+| 013 🏫 | [`013-quota-retry`](lessons/013-quota-retry/README.md) | 429 ชนลิมิต, เครดิต Ollama Cloud หมด · retry, `timeout` · ดูยอดที่ใช้ไปใน dashboard |
+| 014 🏫 | [`014-batch-concurrency`](lessons/014-batch-concurrency/README.md) | `.batch()` ถามหลายคำถามพร้อมกัน · โดน 429 · แก้ด้วย `maxConcurrency` |
+| 015 🏫 | [`015-streaming`](lessons/015-streaming/README.md) | `.stream()` + `for await` แสดงคำตอบทีละส่วน · หยุดกลางทางด้วย `AbortController` |
+| 016 ⭐🏫 | [`016-terminal-chatbot`](lessons/016-terminal-chatbot/README.md) | โมเดลจำเองไม่ได้ ต้องส่งประวัติแชททุกครั้ง · ตัวช่วย `ask()` · แชทบอทร้าน DN Shop ตัวแรกใน terminal (จำบทสนทนา + stream) |
+
 ⭐ คือบทที่ได้ผลงานจับต้องได้ของช่วงนั้น · บท 003 กับ 004 ทำอย่างน้อย 1 บทตามที่ผู้สอนบอก
 
-### ช่วงที่ 2 เป็นต้นไป (กำลังจัดทำ)
+### ช่วงที่ 3 เป็นต้นไป (กำลังจัดทำ)
 
 ยังไม่มีในโฟลเดอร์ `lessons/` แผนคร่าวๆ:
 
 | ช่วง | หัวข้อ | สถานะ |
 |---|---|---|
-| 2 | คุยกับโมเดลผ่าน LangChain | กำลังจัดทำ |
 | 3 | ควบคุมคำตอบ | กำลังจัดทำ |
 | 4 | ให้โมเดลใช้เครื่องมือ (tools) | กำลังจัดทำ |
 | 5–6 | Graph แรก, graph ที่คุยได้และใช้เครื่องมือ | กำลังจัดทำ |

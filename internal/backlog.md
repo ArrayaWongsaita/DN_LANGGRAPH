@@ -2,13 +2,7 @@
 
 รายการเล็กๆ ที่ยังไม่ทำ ใส่เลขแผนที่ต้องทำไว้ท้ายบรรทัด
 
-## แผน 2 (ก่อน/พร้อมสคริปต์ renumber)
-
-- สคริปต์ renumber ต้องแก้เลขบทที่ฮาร์ดโค้ดด้วย: `src/lib/env.ts` (ENV_LESSON), `scripts/lib/course-rules.ts` (046, 006-027), `scripts/lib/doctor-checks.ts` ("002") และคอมเมนต์ `# บท NNN:` ใน `.env.example` หรือรวมเลขเหล่านี้ไว้ที่เดียว (แผน 2)
-- กติกาตั้งชื่อไฟล์ช่วย (helper) และ `route.ts`: ไฟล์ `.ts` ที่ไม่ใช่ไฟล์รันตรงๆ ตอนนี้จะทำให้ `pnpm check` ไม่ผ่าน โผล่เป็นตัวเลือกของ `pnpm lesson` และต้องมี check ของ verify · ต้องตัดสินใจก่อนบท 023-027 (เช่น `^(example|exercise-\d+)(\.(ollama|google))?$` เป็นไฟล์รัน, ที่เหลือยกเว้น) และใช้กับ `route.ts` บท 147 (แผน 2)
-- เลขบทซ้ำ: `course-rules.ts` ไม่ตรวจโฟลเดอร์ที่เลขซ้ำ `findLesson` เลือกตัวแรกเงียบๆ และ verify รันทั้งสองโฟลเดอร์กับ checks ไฟล์เดียว (แผน 2)
-- ไฟล์ `internal/checks/NNN.ts` ที่ import พัง ทำให้ `pnpm verify` ล้มทั้งรอบ (`scripts/verify.ts` ~บรรทัด 83) ให้จับ error ทีละบท (แผน 2)
-- `pnpm verify 999 --provider google` (เลือกไม่ตรงบทใดเลย) พิมพ์ผ่าน 0 ไม่ผ่าน 0 แล้ว exit 0 ต้อง exit 1 เมื่อรันไป 0 รอบ เพราะพิมพ์ผิดจะดูเหมือนผ่าน (แผน 2 และใช้เป็นเกณฑ์ release gate ของแผน 22)
+แผน 2 ปิดแล้ว: ตรวจเลขบทซ้ำ กฎชื่อไฟล์รันได้ และ test guard ของแบบฝึก `97fbd21` · verify จับ checks ที่พังทีละบทและ exit 1 เมื่อรัน 0 รอบ `fdd83a1` · `pnpm renumber` `cec7057` + `3a825e3`
 
 ## แผน 3 (ก่อนบทที่มี prompt ใน code fence)
 
