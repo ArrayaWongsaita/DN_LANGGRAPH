@@ -62,6 +62,11 @@ export async function main(): Promise<void> {
     console.log("👉 ยังไม่ได้เติม backoffMs (ดูบรรทัดที่มี 👉)");
     return;
   }
+  // ครั้งที่ 1 เป็นครั้งแรก ไม่มีการรอ backoffMs(1) ต้องคืน undefined
+  if (backoffMs(1) !== undefined) {
+    console.log("👉 backoffMs(1) ต้องคืน undefined เพราะครั้งแรกไม่ต้องรอ (ดูบรรทัดที่มี 👉)");
+    return;
+  }
 
   for (let n = 2; n <= 6; n++) {
     console.log(`รอก่อนลองครั้งที่ ${n}: ${backoffMs(n)} ms`);

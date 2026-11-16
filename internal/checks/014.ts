@@ -53,6 +53,8 @@ const exercise1 = (label: string): FileCheck => ({
     const [ok, failed] = [Number(m[1]), Number(m[2])];
     if (ok + failed !== 5) throw new CheckFailure(`${label}: สำเร็จ ${ok} + ล้มเหลว ${failed} ต้องรวมเป็น 5`);
     if (ok < 1 || failed < 1) throw new CheckFailure(`${label}: ต้องมีทั้งข้อที่สำเร็จและข้อที่ล้มเหลวอย่างน้อยอย่างละ 1 (ได้ ${ok} และ ${failed})`);
+    // ชุดตัวอย่างที่ 2 (["ก","ข",Error]) ต้องนับได้ 2 สำเร็จ 1 ล้มเหลว (กันคืนค่าคงที่)
+    if (!/^ตรวจนับตัวอย่าง: สำเร็จ 2 ล้มเหลว 1$/m.test(out)) throw new CheckFailure(`${label}: ต้องมีบรรทัด "ตรวจนับตัวอย่าง: สำเร็จ 2 ล้มเหลว 1"`);
     // ตัวเลขสรุปต้องตรงกับบรรทัดรายข้อ (กันคืนตัวเลขคงที่)
     const items = [...out.matchAll(/^ข้อ (\d+): (สำเร็จ|ล้มเหลว \((.*)\))$/gm)];
     if (items.map((i) => i[1]).join(",") !== "1,2,3,4,5") throw new CheckFailure(`${label}: ต้องมีบรรทัด "ข้อ 1:" ถึง "ข้อ 5:" ตามลำดับ`);

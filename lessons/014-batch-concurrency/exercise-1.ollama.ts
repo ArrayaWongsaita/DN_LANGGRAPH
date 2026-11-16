@@ -55,4 +55,7 @@ export async function main(): Promise<void> {
   });
   const counts = countResults(results);
   console.log(`สำเร็จ ${counts?.ok} ล้มเหลว ${counts?.failed}`);
+  // ทดสอบ countResults อีกครั้งกับข้อมูลตัวอย่างอีกชุด (ไม่เรียกโมเดล) เพื่อให้เห็นว่านับจากข้อมูลจริง ไม่ใช่ตัวเลขคงที่
+  const sample = countResults(["ก", "ข", new Error("x")]);
+  console.log(`ตรวจนับตัวอย่าง: สำเร็จ ${sample?.ok} ล้มเหลว ${sample?.failed}`);
 }

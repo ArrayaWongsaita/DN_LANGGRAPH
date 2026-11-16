@@ -43,16 +43,22 @@ describe("เกณฑ์ตรวจบท 014 (example)", () => {
 
 describe("เกณฑ์ตรวจบท 014 (exercise-1)", () => {
   const check = checks["exercise-1.ollama"].check;
-  const lines = (ok: string[]): string => [...ok, "สำเร็จ 4 ล้มเหลว 1"].join("\n");
+  const lines = (ok: string[]): string => [...ok, "สำเร็จ 4 ล้มเหลว 1", "ตรวจนับตัวอย่าง: สำเร็จ 2 ล้มเหลว 1"].join("\n");
+  const SAMPLE = "ตรวจนับตัวอย่าง: สำเร็จ 2 ล้มเหลว 1";
   const items = ["ข้อ 1: สำเร็จ", "ข้อ 2: ล้มเหลว (ข้อนี้ตั้งใจให้ล้ม)", "ข้อ 3: สำเร็จ", "ข้อ 4: สำเร็จ", "ข้อ 5: สำเร็จ"];
   it("ผ่านเมื่อสรุปตรงกับรายข้อ", () => {
     expect(() => check(run(lines(items)))).not.toThrow();
   });
   it("ไม่ผ่านเมื่อไม่มีข้อล้ม ผลรวมไม่ใช่ 5 หรือสรุปไม่ตรงรายข้อ", () => {
-    expect(() => check(run(["ข้อ 1: สำเร็จ", "ข้อ 2: สำเร็จ", "ข้อ 3: สำเร็จ", "ข้อ 4: สำเร็จ", "ข้อ 5: สำเร็จ", "สำเร็จ 5 ล้มเหลว 0"].join("\n")))).toThrow();
-    expect(() => check(run([...items, "สำเร็จ 3 ล้มเหลว 1"].join("\n")))).toThrow();
-    expect(() => check(run([...items, "สำเร็จ 3 ล้มเหลว 2"].join("\n")))).toThrow();
-    expect(() => check(run([...items, "สำเร็จ undefined ล้มเหลว undefined"].join("\n")))).toThrow();
+    expect(() => check(run(["ข้อ 1: สำเร็จ", "ข้อ 2: สำเร็จ", "ข้อ 3: สำเร็จ", "ข้อ 4: สำเร็จ", "ข้อ 5: สำเร็จ", "สำเร็จ 5 ล้มเหลว 0", "ตรวจนับตัวอย่าง: สำเร็จ 2 ล้มเหลว 1"].join("\n")))).toThrow();
+    expect(() => check(run([...items, "สำเร็จ 3 ล้มเหลว 1", SAMPLE].join("\n")))).toThrow();
+    expect(() => check(run([...items, "สำเร็จ 3 ล้มเหลว 2", SAMPLE].join("\n")))).toThrow();
+    expect(() => check(run([...items, "สำเร็จ undefined ล้มเหลว undefined", SAMPLE].join("\n")))).toThrow();
+  });
+  it("ไม่ผ่านเมื่อ countResults คืนค่าคงที่ (ชุดตัวอย่างไม่ตรง หรือไม่มีบรรทัด)", () => {
+    expect(() => check(run([...items, "สำเร็จ 4 ล้มเหลว 1", "ตรวจนับตัวอย่าง: สำเร็จ 4 ล้มเหลว 1"].join("\n")))).toThrow();
+    expect(() => check(run([...items, "สำเร็จ 4 ล้มเหลว 1"].join("\n")))).toThrow();
+    expect(() => check(run([...items, "สำเร็จ 4 ล้มเหลว 1", "ตรวจนับตัวอย่าง: สำเร็จ undefined ล้มเหลว undefined"].join("\n")))).toThrow();
   });
   it("ไม่ผ่านเมื่อข้อที่ล้มไม่มีข้อความ error", () => {
     expect(() => check(run(lines(items.map((l) => l.replace("ข้อนี้ตั้งใจให้ล้ม", "undefined")))))).toThrow();
