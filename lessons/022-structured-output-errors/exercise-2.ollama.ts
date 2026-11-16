@@ -1,14 +1,9 @@
-// แบบฝึกหัด 2: ลองแปลงซ้ำเมื่อโมเดลไม่ได้ให้ args ที่ใช้ได้
+// เฉลยแบบฝึกหัด 2: ลองแปลงซ้ำเมื่อโมเดลไม่ได้ให้ args ที่ใช้ได้
 //
 // โจทย์: เติม classifyWithRetry(classify, message, maxAttempts) ให้เรียก classify(message) ซ้ำเมื่อได้ null
 // จนกว่าจะได้ผลหรือครบ maxAttempts แล้วคืน { result, attempts } (attempts = จำนวนครั้งที่เรียกจริง)
 // ไฟล์ใช้ includeRaw ในขั้นจริง (parsed ?? null) และแสดงผลด้วยตัวอย่างปลอม 2 ตัวที่รู้คำตอบล่วงหน้า
-//
-// แนวทาง:
-// 1. วนครั้งที่ 1 ถึง maxAttempts: เรียก classify(message) ถ้าได้ผล (ไม่ใช่ null) ให้คืน { result, attempts: ครั้งที่ } ทันที (ถ้าเขียนด้วย await ให้เติม async หน้า function)
-// 2. ถ้าครบ maxAttempts แล้วยังเป็น null ให้คืน { result: null, attempts: maxAttempts }
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ classifyWithRetry คืน { result: null, attempts: 0 } (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 022 exercise-2.ollama
+// รัน: pnpm lesson 022 exercise-2.ollama
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
 import { CLASSIFY_SYSTEM, CustomerQuestion, MESSAGES } from "./customer-question";
@@ -40,16 +35,20 @@ const model = new ChatOllama({
   headers: apiKey === undefined ? undefined : { Authorization: `Bearer ${apiKey}` },
 });
 
-function classifyWithRetry(
+async function classifyWithRetry(
   classify: (message: string) => Promise<CustomerQuestion | null>,
   message: string,
   maxAttempts: number,
 ): Promise<{ result: CustomerQuestion | null; attempts: number }> {
-  void classify; // ลบบรรทัด void ทั้ง 3 เมื่อเริ่มใช้ตัวแปร
-  void message;
-  void maxAttempts;
-  // 👉 ลอง classify(message) ซ้ำเมื่อได้ null จนได้ผลหรือครบ maxAttempts (แทนบรรทัด return ด้านล่าง)
-  return Promise.resolve({ result: null, attempts: 0 });
+  // เฉลยจุดที่ 1: วนครั้งที่ 1 ถึง maxAttempts แล้วเรียก classify(message) จริงทุกรอบ
+  // หยุดทันทีที่ได้ผลแรกที่ไม่เป็น null: attempts จึงเป็นจำนวนครั้งที่เรียกจริง ไม่ใช่ maxAttempts ตายตัว
+  // ไม่เขียน while (true) เพราะต้องมีเพดาน: ถ้าโมเดลให้ args เสียทุกครั้ง การลองไม่จำกัดจะกิน token และเวลาจนไม่มีที่สิ้นสุด
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await classify(message);
+    if (result !== null) return { result, attempts: attempt };
+  }
+  // ครบ maxAttempts แล้วยังเป็น null: คืนจำนวนครั้งที่ลองจริงให้ผู้เรียกตัดสินใจต่อ (พิมพ์บอกผู้ใช้หรือยกเลิก)
+  return { result: null, attempts: maxAttempts };
 }
 
 // ตัวข้อความของบรรทัด ตรวจตัวอย่าง: สร้างจากผลจริงเสมอ ไม่พิมพ์ข้อความตายตัว
@@ -58,12 +57,6 @@ function sampleText(result: CustomerQuestion | null, attempts: number): string {
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ classifyWithRetry ยังไม่ทำงาน (ไม่เสีย token)
-  if ((await classifyWithRetry(flaky(), MESSAGES[0], MAX_ATTEMPTS)).attempts === 0) {
-    console.log("👉 ยังไม่ได้เติม classifyWithRetry (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่า retry ทำงานจริง: ตัวปลอมตัวแรกได้ผลครั้งที่ 2 ตัวที่สองไม่ได้ผลเลย
   const first = await classifyWithRetry(flaky(), MESSAGES[0], MAX_ATTEMPTS);
   console.log(`ตรวจตัวอย่าง: ${sampleText(first.result, first.attempts)}`);

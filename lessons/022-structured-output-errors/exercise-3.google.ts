@@ -1,17 +1,16 @@
-// แบบฝึกหัด 3 ⭐: แชทบอทร้าน DN Shop รุ่นแยกประเภทได้ (รวมบท 016–022 เข้าด้วยกัน)
+// เฉลยแบบฝึกหัด 3 ⭐: แชทบอทร้าน DN Shop รุ่นแยกประเภทได้ (รวมบท 016–022 เข้าด้วยกัน)
 //
 // โจทย์: เติม contextFor(question, customerId) ให้ประกอบข้อมูลจากร้านที่ตรงกับคำถาม แล้วไฟล์จะใส่ข้อมูลนี้ใน system ของทุกตา
 // ไฟล์แยกประเภทคำถามด้วย includeRaw ก่อนตอบ และพิมพ์ประเภทกับข้อมูลที่ส่งให้โมเดล เพื่อให้ตรวจย้อนหลังได้ว่าตาไหนผิด
-//
-// แนวทาง:
-// 1. product: วน question.keywords แล้ว searchProducts({ keyword }) รวมผลไม่ซ้ำด้วย Map (ตาม id) ไม่เกิน 5 ชิ้น บรรทัดละ "<id> <ชื่อ> ราคา <price> บาท สต็อก <stock>" ถ้าไม่เจอเลยคืน "ไม่พบสินค้าที่ตรงกับคำค้น"
-// 2. order: ไม่มี orderId ใช้ listOrders(customerId) บรรทัดละ "<id> <ป้ายสถานะ>" · มี orderId ใช้ getOrder(orderId, customerId) เจอให้คืน "คำสั่งซื้อ <id> สถานะ: <ป้าย> ยอดรวม <orderTotal> บาท" ไม่เจอให้คืน "ไม่พบคำสั่งซื้อ <id> ของลูกค้ารายนี้" (เพิ่ม import จาก src/shop: searchProducts, getOrder, listOrders, orderTotal, ORDER_STATUS_LABELS และ type Product ถ้าใช้ Map)
-// 3. policy / other คืน "" · จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ contextFor คืน "" (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 022 exercise-3.google
+// รัน: pnpm lesson 022 exercise-3.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
 import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatGoogle } from "@langchain/google";
 import { ask } from "../../src/lib/ask";
 import { env } from "../../src/lib/env";
+import { getOrder, listOrders, orderTotal } from "../../src/shop/orders";
+import { searchProducts } from "../../src/shop/products";
+import { ORDER_STATUS_LABELS, type Product } from "../../src/shop/types";
 import { CLASSIFY_SYSTEM, CUSTOMER_ID, CustomerQuestion, oneLine } from "./customer-question";
 
 const TOOL = "classify_question";
@@ -48,19 +47,45 @@ const SAMPLE: CustomerQuestion = { category: "order", keywords: [], orderId: "O1
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function contextFor(question: CustomerQuestion, customerId: string): string {
-  void question; // ลบบรรทัด void ทั้ง 2 เมื่อเริ่มใช้ตัวแปร
-  void customerId;
-  // 👉 ประกอบข้อมูลจากร้านตาม question.category (แทนบรรทัด return "")
+  // เฉลยจุดที่ 1: เลือกข้อมูลตามประเภทที่โมเดลบอก แต่เจ้าของคำสั่งซื้อใช้ customerId ที่ระบบส่งมาเท่านั้น
+  if (question.category === "product") {
+    // ค้นทีละ keyword แล้วรวมผลด้วย Map ตาม id: searchProducts บังคับให้ตรงทุกคำใน keyword เดียว
+    // การยิงทั้งประโยคเป็น keyword เดียวจึงมักไม่เจออะไรเลย ขณะที่การแยกคำได้ผลตรงกว่า
+    // Map กันสินค้าซ้ำเมื่อหลาย keyword เจอชิ้นเดียวกัน แล้วตัดเหลือ 5 ชิ้นเพื่อไม่ให้ prompt ยาวโดยไม่จำเป็น (บท 018)
+    const found = new Map<string, Product>();
+    for (const keyword of question.keywords) {
+      for (const product of searchProducts({ keyword })) {
+        if (!found.has(product.id)) found.set(product.id, product);
+      }
+    }
+    if (found.size === 0) return "ไม่พบสินค้าที่ตรงกับคำค้น";
+    // บรรทัดละ 1 ชิ้น มี id ชื่อ ราคา และสต็อก: ค่าทุกตัวมาจากข้อมูลร้าน ไม่พิมพ์เอง
+    return [...found.values()]
+      .slice(0, 5)
+      .map((product) => `${product.id} ${product.name} ราคา ${product.price} บาท สต็อก ${product.stock}`)
+      .join("\n");
+  }
+
+  if (question.category === "order") {
+    if (question.orderId === undefined) {
+      // ไม่มีรหัสในข้อความ: เปิดรายการคำสั่งซื้อของลูกค้าคนนี้ (listOrders กรองเจ้าของให้แล้ว)
+      const orders = listOrders(customerId);
+      if (orders.length === 0) return "ไม่มีคำสั่งซื้อของลูกค้ารายนี้";
+      return orders.map((order) => `${order.id} ${ORDER_STATUS_LABELS[order.status]}`).join("\n");
+    }
+    // มีรหัส: ใช้ getOrder(orderId, customerId) ที่ตรวจเจ้าของเสมอ ห้ามเชื่อรหัสลูกค้าจากโมเดล
+    // ถ้าโมเดลเลือกเจ้าของได้ มันจะขอดูคำสั่งซื้อของคนอื่นได้ (รหัสลูกค้ามาจากการ login เท่านั้น)
+    // "ไม่พบ" ของคนอื่นต้องเหมือนกับ "ไม่มีอยู่จริง": ถ้าตอบต่างกัน ผู้ใช้จะเดาได้ว่ารหัสนั้นมีอยู่จริง (Review Focus 1)
+    const order = getOrder(question.orderId, customerId);
+    if (order === undefined) return `ไม่พบคำสั่งซื้อ ${question.orderId} ของลูกค้ารายนี้`;
+    return `คำสั่งซื้อ ${order.id} สถานะ: ${ORDER_STATUS_LABELS[order.status]} ยอดรวม ${orderTotal(order)} บาท`;
+  }
+
+  // policy / other: ไม่ต้องเปิดข้อมูลจากร้านเลย ตอบจาก system 4 ส่วนได้โดยไม่ต้องใส่ข้อมูลเพิ่ม
   return "";
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ contextFor ยังไม่ทำงาน (ไม่เสีย token)
-  if (contextFor(SAMPLE, CUSTOMER_ID) === "") {
-    console.log("👉 ยังไม่ได้เติม contextFor (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่า contextFor เปิดคำสั่งซื้อของลูกค้าคนนี้จริง
   console.log(`ตรวจตัวอย่าง: ${oneLine(contextFor(SAMPLE, CUSTOMER_ID), 120)}`);
 

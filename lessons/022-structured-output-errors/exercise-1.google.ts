@@ -1,19 +1,15 @@
-// แบบฝึกหัด 1: อธิบายว่าทำไม args ที่โมเดลส่งมาจึงใช้ไม่ได้
+// เฉลยแบบฝึกหัด 1: อธิบายว่าทำไม args ที่โมเดลส่งมาจึงใช้ไม่ได้
 //
 // โจทย์: เติม describeFailure(raw) ให้บอกเหตุผลเป็นภาษาไทยบรรทัดเดียว — ไม่มี tool call บอกว่าโมเดลตอบเป็นข้อความ
 // ถ้ามี tool call แต่ args ไม่ตรง StrictQuestion (schema ที่ไฟล์นี้ใช้จริง) ให้ย่อ z.prettifyError เป็นบรรทัดเดียว
 // ไฟล์ใช้ schema ที่เข้มขึ้น (summary ยาวไม่เกิน 15 ตัวอักษร) เพื่อให้มีโอกาสเห็น args ที่ไม่ผ่านจริง แล้วพิมพ์เหตุผลของทุกข้อ
-//
-// แนวทาง:
-// 1. หา tool call ตัวแรกด้วย raw.tool_calls?.[0] ถ้าไม่มีเลย ให้คืน `ไม่ได้เรียกเครื่องมือ ตอบเป็นข้อความ: ${oneLine(raw.text, 60)}`
-// 2. ถ้ามี ให้ StrictQuestion.safeParse(call.args) ถ้าไม่ผ่าน คืน `args ไม่ตรง schema: ${oneLine(z.prettifyError(result.error), 200)}` (ยุบหลายบรรทัดเป็นบรรทัดเดียว จะได้เห็น → at <field>)
-// 3. เพิ่ม oneLine ใน import จาก ./customer-question · จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ describeFailure คืน "" (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 022 exercise-1.google
+// รัน: pnpm lesson 022 exercise-1.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
 import { AIMessage } from "@langchain/core/messages";
 import { ChatGoogle } from "@langchain/google";
 import * as z from "zod";
 import { env } from "../../src/lib/env";
-import { CLASSIFY_SYSTEM, CustomerQuestion, MESSAGES } from "./customer-question";
+import { CLASSIFY_SYSTEM, CustomerQuestion, MESSAGES, oneLine } from "./customer-question";
 
 z.config(z.locales.th());
 
@@ -34,18 +30,24 @@ const StrictQuestion = CustomerQuestion.extend({
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function describeFailure(raw: AIMessage): string {
-  void raw; // บรรทัดนี้กัน lint เตือนว่าตัวแปร raw ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ raw
-  // 👉 อธิบายเหตุผลที่ raw ใช้ไม่ได้ (แทนบรรทัด return "")
-  return "";
+  // เฉลยจุดที่ 1: อ่าน tool_calls[0] ของคำตอบดิบ ไม่เดาจากถ้อยคำ เพราะสองกรณีทิ้งร่องรอยไว้ต่างกัน
+  // ไม่มี tool call = withStructuredOutput ไม่ได้ args มาเลย (parsed เป็น undefined) จึงบอกพร้อมข้อความที่โมเดลตอบ
+  const call = raw.tool_calls?.[0];
+  if (call === undefined) {
+    return `ไม่ได้เรียกเครื่องมือ ตอบเป็นข้อความ: ${oneLine(raw.text, 60)}`;
+  }
+  // มี tool call = parsed เป็น null เพราะ args ไม่ผ่าน schema ที่ไฟล์นี้ใช้จริง (StrictQuestion ที่ summary ยาวไม่เกิน 15)
+  // ตรวจด้วย StrictQuestion ไม่ใช่ CustomerQuestion: args ที่ผ่าน CustomerQuestion แต่ summary ยาวเกิน 15 ก็ทำให้ parsed เป็น null
+  // ถ้าตรวจด้วย CustomerQuestion จะผ่านแล้วพิมพ์เหตุผลว่าง ซึ่งไม่บอกอะไรคนอ่านเลย
+  // ใช้ z.prettifyError ไม่เขียนข้อความเอง: มันบอกบรรทัด → at <field> ว่าผิดที่ field ไหน (ยุบเป็นบรรทัดเดียวด้วย oneLine)
+  const result = StrictQuestion.safeParse(call.args);
+  if (result.success) {
+    return "args ผ่าน schema ของไฟล์นี้ แต่ LangChain แปลงไม่สำเร็จ";
+  }
+  return `args ไม่ตรง schema: ${oneLine(z.prettifyError(result.error), 200)}`;
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ describeFailure ยังไม่ทำงาน (ไม่เสีย token)
-  if (describeFailure(NO_TOOL_CALL) === "" || describeFailure(BAD_ARGS) === "") {
-    console.log("👉 ยังไม่ได้เติม describeFailure (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   // บรรทัดที่พิมพ์นี้ใช้ตรวจว่า describeFailure แยกสองกรณีออกจากกันจริง
   console.log(`ตรวจตัวอย่าง 1: ${describeFailure(NO_TOOL_CALL)}`);
   console.log(`ตรวจตัวอย่าง 2: ${describeFailure(BAD_ARGS)}`);
