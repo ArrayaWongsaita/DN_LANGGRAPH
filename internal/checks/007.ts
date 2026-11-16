@@ -37,6 +37,8 @@ const exercise2 = (label: string): FileCheck => ({
     expectMatches(run.stdout, /ชนิดของ content: (string|array)/, label);
     const text = extractAfter(run.stdout, "text: ", label);
     expectThai(text, label);
+    // contentKind ต้องแยก string กับ array ได้จริง (ไม่ใช่คืนค่าคงที่)
+    expectIncludes(run.stdout, "ตรวจตัวอย่าง: string array", label);
   },
 });
 
