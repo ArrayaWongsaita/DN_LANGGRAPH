@@ -430,3 +430,15 @@
   - 007: `ChatGoogle` คืน `content` เป็น array หรือ string · usage hook นับ token ของ `ChatGoogle` ได้ (ผ่าน `fetch(Request)`) · `model.model` ของ `ChatGoogle` คืนชื่อเดียวกับ `GOOGLE_MODEL`
   - 008: `ChatGoogle` เก็บเหตุที่หยุดไว้ที่ `finish_reason` หรือ `finishReason` (example.google.ts อ่านทั้งสองชื่อและ throw ถ้าไม่มี) และค่าจริงคืออะไร · `usage_metadata.output_tokens` ของ Gemini รวม thinking หรือไม่ เทียบกับ usage hook · `contentBlocks` ของ Gemini
   - 009: Gemini รับ `{ role: "system" }` และ few-shot ที่มี ai message
+  - 010:
+    - `ChatGoogle` ที่ไม่ส่ง temperature ไม่มี warning
+    - `maxOutputTokens` 20 ได้ `MAX_TOKENS` และข้อความอาจว่างเพราะความคิดใช้ token ไป
+    - Ollama ในเครื่อง `numPredict` 20 ได้ `length`
+  - 011:
+    - `thinkingLevel` ใช้ได้กับ `GOOGLE_MODEL` ที่เลือกไหม (บางรุ่นใช้ `thinkingBudget`) และได้ block reasoning จริงไหม
+    - รุ่น Ollama ที่เลือกรองรับ `think: true/false` ไหม และ error ของรุ่นที่ไม่รองรับ (`TODO(6b)` ใน README)
+  - 012:
+    - field status ของ error จาก `ChatGoogle` (`status` หรือ `status_code`) และเลขจริงเมื่อชื่อโมเดลผิดหรือ key ผิด แล้วล็อกในเกณฑ์ `example.google`
+    - Ollama Cloud key ผิดได้ 401
+    - `fetch failed` บน Windows ใช้เวลาเท่าไร
+    - error เมื่อโมเดลไม่รองรับ tools
