@@ -59,7 +59,9 @@ export async function main(): Promise<void> {
 
   // บรรทัดที่พิมพ์นี้ใช้ตรวจ examplesAsText กับตัวอย่าง 2 ข้อแรก (ต่อเป็นบรรทัดเดียวเพื่อให้ตรวจง่าย)
   console.log(`ตรวจตัวอย่าง: ${examplesAsText(EXAMPLES.slice(0, 2)).replace(/\s*\n\s*/g, " | ")}`);
-  const system = `${SYSTEM}\n\nตัวอย่าง:\n${examplesAsText(EXAMPLES)}`;
+  // ตัวอย่างที่เขียนเป็นข้อความไม่ได้สอนรูปแบบคำตอบเข้มเท่าคู่ user/assistant โมเดลอาจตอบตามรูป "ประเภท: ..."
+  // จึงต้องสั่งรูปแบบคำตอบด้วยประโยคเพิ่มใน system (ค่าที่ตอบคือป้ายคำเดียว)
+  const system = `${SYSTEM} ตอบเป็นป้ายคำเดียวเท่านั้น\n\nตัวอย่าง:\n${examplesAsText(EXAMPLES)}`;
   let formatOk = 0;
   let matched = 0;
   for (const [i, t] of TESTS.entries()) {

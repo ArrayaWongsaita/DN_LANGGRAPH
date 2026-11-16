@@ -77,6 +77,11 @@ describe("เกณฑ์ตรวจบท 019 (exercise-1)", () => {
     expect(() => check(run(GOOD1))).not.toThrow();
     expect(() => checks["exercise-1.google"].check(run(GOOD1))).not.toThrow();
   });
+  it("ผ่านเมื่อมีแค่บรรทัด ตรงกับที่คาด (ไม่มีรูปแบบถูก ตามที่ไฟล์พิมพ์)", () => {
+    const noY = GOOD1.replace(/\nรูปแบบถูก: \d\/5/, "");
+    expect(noY).not.toContain("รูปแบบถูก");
+    expect(() => check(run(noY))).not.toThrow();
+  });
   it("ไม่ผ่านเมื่อยังไม่เติม หรือ N < 6", () => {
     expect(() => check(run("👉 ยังไม่ได้เติม moreExamples (ดูบรรทัดที่มี 👉)"))).toThrow();
     expect(() => check(run(GOOD1.replace("ตัวอย่างทั้งหมด: 6 ข้อ", "ตัวอย่างทั้งหมด: 5 ข้อ")))).toThrow(/6 ข้อ/);

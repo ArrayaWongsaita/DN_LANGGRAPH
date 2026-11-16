@@ -36,7 +36,8 @@ const linesOf = (s: string): string[] => norm(s).split("\n").map((l) => l.trimEn
 interface Round { labels: string[]; formatOk: number; matched: number }
 
 // อ่านผลของ 1 รอบ: ข้อ 1–5 ตามลำดับ แล้วเทียบ "รูปแบบถูก" และ "ตรงกับที่คาด" กับที่นับเองจากบรรทัดรายข้อ
-export function parseRound(section: string, expected: string[], label: string): Round {
+// withFormat = false สำหรับไฟล์ที่พิมพ์แค่ "ตรงกับที่คาด" (ไม่มีบรรทัด รูปแบบถูก)
+export function parseRound(section: string, expected: string[], label: string, withFormat = true): Round {
   const items = [...section.matchAll(/^ข้อ (\d+):[ \t]*(.*)$/gm)];
   if (items.map((m) => m[1]).join(",") !== "1,2,3,4,5") {
     throw new CheckFailure(`${label}: ต้องมีบรรทัด "ข้อ 1:" ถึง "ข้อ 5:" ตามลำดับ (ได้ ${items.map((m) => m[1]).join(",") || "ไม่มีเลย"})`);
@@ -44,9 +45,11 @@ export function parseRound(section: string, expected: string[], label: string): 
   const labels = items.map((m) => m[2].trim());
   const formatOk = labels.filter((l) => LABELS.includes(l)).length;
   const matched = labels.filter((l, i) => l === expected[i]).length;
-  const y = expectMatches(section, /^รูปแบบถูก: (\d+)\/5$/m, `${label} (รูปแบบถูก: Y/5)`);
+  if (withFormat) {
+    const y = expectMatches(section, /^รูปแบบถูก: (\d+)\/5$/m, `${label} (รูปแบบถูก: Y/5)`);
+    if (Number(y[1]) !== formatOk) throw new CheckFailure(`${label}: รูปแบบถูก ${y[1]}/5 ไม่ตรงกับที่นับจากรายข้อ (${formatOk}/5)`);
+  }
   const x = expectMatches(section, /^ตรงกับที่คาด: (\d+)\/5$/m, `${label} (ตรงกับที่คาด: X/5)`);
-  if (Number(y[1]) !== formatOk) throw new CheckFailure(`${label}: รูปแบบถูก ${y[1]}/5 ไม่ตรงกับที่นับจากรายข้อ (${formatOk}/5)`);
   if (Number(x[1]) !== matched) throw new CheckFailure(`${label}: ตรงกับที่คาด ${x[1]}/5 ไม่ตรงกับที่นับจากรายข้อ (${matched}/5)`);
   return { labels, formatOk, matched };
 }
@@ -73,7 +76,7 @@ const exercise1 = (label: string): FileCheck => ({
     if (Number(n[1]) < 6) throw new CheckFailure(`${label}: ต้องมีตัวอย่างทั้งหมดอย่างน้อย 6 ข้อ คือ 4 ข้อเดิมกับที่เพิ่มอย่างน้อย 2 ข้อ (ได้ ${n[1]})`);
     const copied = expectMatches(out, /^ตัวอย่างที่ซ้ำกับข้อสอบ: (\d+) ข้อ$/m, `${label} (ตัวอย่างที่ซ้ำกับข้อสอบ: M ข้อ)`);
     if (Number(copied[1]) !== 0) throw new CheckFailure(`${label}: ตัวอย่างที่เพิ่มซ้ำกับข้อสอบ ${copied[1]} ข้อ ต้องเป็น 0 (เขียนตัวอย่างของตัวเอง)`);
-    const round = parseRound(out, HARD_EXPECTED, label);
+    const round = parseRound(out, HARD_EXPECTED, label, false);
     if (round.matched < 4) throw new CheckFailure(`${label}: ต้องตรงกับที่คาดอย่างน้อย 4/5 (ได้ ${round.matched}/5)`);
   },
 });
