@@ -59,7 +59,7 @@ cp ../LANGGRAPH/.env .env      # .env ไม่ถูก commit ต้องค�
 
 1. แก้บทหรือเกณฑ์บน `main` แล้ว commit
 2. `git -C ../LANGGRAPH-solutions merge main`
-3. ถ้า conflict ในไฟล์ `exercise-*` ให้ **เก็บโค้ดเฉลยไว้** แล้วปรับให้เข้ากับโจทย์ที่เปลี่ยน (ถ้าโจทย์เปลี่ยนต้องอัปเดตเฉลยด้วย)
+3. ถ้า conflict ในไฟล์ `exercise-*` ให้ **เก็บโค้ดเฉลยไว้** (`git checkout --ours` ใน worktree `solutions`) แล้วปรับให้เข้ากับโจทย์ที่เปลี่ยน (ถ้าโจทย์เปลี่ยนต้องอัปเดตเฉลยด้วย) · กรณี renumber ดูหัวข้อถัดไป
 4. ใน worktree รัน `pnpm check` และ `pnpm verify` ของบทที่แก้ ให้ผ่านก่อนไปต่อ
 5. ห้ามแก้ไฟล์นอก `exercise-*` บน `solutions` เพื่อไม่ให้เกิด conflict ซ้ำๆ
 
@@ -67,14 +67,19 @@ cp ../LANGGRAPH/.env .env      # .env ไม่ถูก commit ต้องค�
 
 ```bash
 pnpm renumber insert 012 --dry-run   # ดูแผนก่อน ไม่แก้ไฟล์
-pnpm renumber insert 012             # เลื่อนบท 012 ขึ้นไปอีก 1 แล้วสร้างช่องว่างให้บทใหม่
+pnpm renumber insert 012             # เลื่อนบทตั้งแต่เลขนี้ขึ้นไปอีก 1 แล้วสร้างช่องว่างให้บทใหม่
 pnpm renumber remove 012 --dry-run
-pnpm renumber remove 012             # ลบโฟลเดอร์บท 012 แล้วเลื่อนบทหลังจากนั้นลง 1
+pnpm renumber remove 012             # หลังลบโฟลเดอร์ของบทนั้นเอง เลื่อนบทหลังจากนั้นลง 1
 ```
 
-- เปลี่ยนชื่อโฟลเดอร์ `lessons/NNN-*`, ไฟล์ `internal/checks/NNN.ts`, เลขบทใน README (ตารางสารบัญและลิงก์) และเลขที่ฝังในไฟล์ allowlist 3 ไฟล์: `src/lib/env.ts`, `scripts/lib/doctor-checks.ts`, `scripts/lib/course-rules.ts` · ไม่แตะไฟล์อื่น (เช่น `.env.example` และเอกสารออกแบบ) ต้องตรวจเอง · ตอน `remove` ที่อ้างถึงบทที่ถูกลบจะถูกรายงาน (⚠️) ให้แก้เอง
+- เปลี่ยนชื่อโฟลเดอร์ `lessons/NNN-*`, ไฟล์ `internal/checks/NNN.ts` และ `internal/verify/checks-NNN.test.ts` (พร้อมแก้ import `../checks/NNN` กับเลขบทในไฟล์นั้น) · แก้เลขบทใน README (ตารางสารบัญและลิงก์), ใน README/โค้ดของแต่ละบท, ใน `internal/*.md`, `.env.example` และเลขที่ฝังในไฟล์ allowlist 3 ไฟล์: `src/lib/env.ts`, `scripts/lib/doctor-checks.ts`, `scripts/lib/course-rules.ts` · ไม่แตะ `docs/` และไฟล์ `*.test.ts` อื่นๆ (มีเลขบทในฟิกซ์เจอร์) ต้องรัน `pnpm test` แล้วแก้เอง (ปกติคือ `src/lib/env.test.ts` กับ `scripts/lib/course-rules.test.ts`) · ตอน `remove` ที่อ้างถึงบทที่ถูกลบจะถูกรายงาน (⚠️) ให้แก้เอง
 - ปฏิเสธเมื่อ working tree ไม่สะอาด, เลขชนกัน หรือบางขั้นล้มเหลว ใช้ `--dry-run` ก่อนทุกครั้ง
-- รันบน `main` แล้ว commit ผลบน `main` จากนั้น `git -C ../LANGGRAPH-solutions merge main` git ตามการเปลี่ยนชื่อไฟล์ได้เอง ถ้า conflict ใน `exercise-*` ให้เก็บโค้ดเฉลย แล้ว `pnpm check` กับ `pnpm test` ใน worktree
+- **ลำดับกับ branch `solutions`** (ทดสอบแล้วบน clone: insert 014 → merge ได้ conflict เฉพาะ `lessons/*/exercise-*` ของบทที่ถูกเลื่อน):
+  1. บน `main`: `pnpm renumber insert NNN` แล้ว commit (สร้างบทใหม่ในช่องว่างและ commit ต่อได้)
+  2. ใน `../LANGGRAPH-solutions`: รัน **คำสั่งเดียวกัน** (`pnpm renumber insert NNN`) แล้ว commit เพื่อให้เลขใน comment `// รัน: pnpm lesson ...` ของเฉลยเลื่อนตามด้วย
+  3. `git merge main` ใน worktree นั้น
+  4. conflict จะอยู่ใน `lessons/*/exercise-*` เท่านั้น ให้ใช้ฝั่งเฉลย: `git diff --name-only --diff-filter=U | xargs git checkout --ours` แล้ว `git add -A` และ commit (อย่าเลือก `--theirs` เพราะจะเอา 👉 กลับมา)
+  5. `pnpm check` (มีกฎจับ `pnpm lesson MMM` ที่เลขไม่ตรงบท) และ `pnpm test` ต้องผ่าน
 
 ห้าม push จนกว่าจะครบเงื่อนไขในเอกสารออกแบบข้อ 5.14 แล้วจึง push `main` และ `solutions` พร้อมกันครั้งเดียว
 
