@@ -1,16 +1,14 @@
-// แบบฝึกหัด 3 ⭐: รวมชิ้นของ stream แล้วอ่านจำนวน token ของแต่ละตา
+// เฉลยแบบฝึกหัด 3 ⭐: รวมชิ้นของ stream แล้วอ่านจำนวน token ของแต่ละตา
 //
 // โจทย์: เติม mergeChunks(chunks) ให้รวม AIMessageChunk หลายชิ้นเป็นชิ้นเดียวด้วย concat (จาก @langchain/core/utils/stream)
 // คืน undefined ถ้าไม่มีชิ้นเลย ไฟล์จะเก็บทุกชิ้นของแต่ละตาแล้วใช้ mergeChunks รวม เพื่ออ่าน usage_metadata ของชิ้นที่รวมแล้ว
 // และพิมพ์หลังคำตอบของทุกตา
 //   (token ขาเข้า N ขาออก M)
-//
-// แนวทาง:
-// 1. เพิ่ม import { concat } from "@langchain/core/utils/stream" ที่หัวไฟล์ concat(a, b) รวมสองชิ้นเป็นหนึ่งชิ้น ข้อความต่อกัน และ usage_metadata ถูกรวมให้ด้วย ใช้วนรวมทีละชิ้นได้ (reduce หรือ for)
-// 2. ชิ้นที่ไม่มีข้อความก็ต้องรวมด้วย เพราะ usage_metadata มักอยู่ที่ชิ้นท้ายสุดซึ่งไม่มีข้อความ
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ mergeChunks คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 016 exercise-3.google
+// รัน: pnpm lesson 016 exercise-3.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
+
 import { AIMessage, AIMessageChunk, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { concat } from "@langchain/core/utils/stream";
 import { ChatGoogle } from "@langchain/google";
 import { ask } from "../../src/lib/ask";
 import { env } from "../../src/lib/env";
@@ -20,18 +18,14 @@ const SYSTEM = "คุณคือผู้ช่วยร้าน DN Shop ร�
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
 function mergeChunks(chunks: AIMessageChunk[]): AIMessageChunk | undefined {
-  void chunks; // บรรทัดนี้กัน lint เตือนว่าตัวแปร chunks ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ chunks
-  // 👉 รวมทุกชิ้นด้วย concat แล้วคืนชิ้นที่รวมแล้ว (แทนบรรทัด return undefined)
-  return undefined;
+  // เฉลยจุดที่ 1: รวมด้วย concat ไม่บวกสตริงหรือบวก token เอง เพราะ concat รู้วิธีรวม usage_metadata และ field อื่นของชิ้นให้ถูกต้อง
+  // รวมทุกชิ้นรวมถึงชิ้นที่ไม่มีข้อความ เพราะ usage_metadata มักอยู่ที่ชิ้นท้ายสุดซึ่งไม่มีข้อความ
+  let merged: AIMessageChunk | undefined;
+  for (const chunk of chunks) merged = merged === undefined ? chunk : concat(merged, chunk);
+  return merged;
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ mergeChunks ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  if (mergeChunks([new AIMessageChunk("ก"), new AIMessageChunk("ข")])?.text !== "กข") {
-    console.log("👉 ยังไม่ได้เติม mergeChunks (ดูบรรทัดที่มี 👉) ต้องคืนชิ้นที่มีข้อความ กข");
-    return;
-  }
-
   console.log("--- แชทบอท DN Shop (พิมพ์ จบ เพื่อออก แสดงจำนวน token ทุกตา) ---");
   const history: BaseMessage[] = [new SystemMessage(SYSTEM)];
   while (true) {
