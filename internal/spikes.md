@@ -449,3 +449,14 @@
     - ลิมิตของแผนฟรี Gemini และของ Ollama Cloud (`TODO(6b)` ใน README)
     - `handleChatModelStart` ทำงานกับ `ChatGoogle`
     - batch แบบไม่จำกัดกับแผนฟรีได้ 429 ไหม (จดผล ห้ามใส่เป็นเกณฑ์)
+  - 015:
+    - `ChatGoogle` stream ได้หลายชิ้น (เกณฑ์ `example.google` ต้องการชิ้นที่มีข้อความอย่างน้อย 2 ชิ้น) และ `model.stream(q, { signal })` ที่ abort แล้วได้ `AbortError` (ชื่อ error ตรงกับที่ `example.google` และ `exercise-2.google` เช็ก) หรือ loop จบเอง ไม่ค้าง
+    - Ollama จริงได้กี่ชิ้นต่อคำตอบ (README บอกว่าส่งทีละ token) และ abort กลาง stream ได้ `AbortError` เหมือนที่เห็นผ่าน shim
+  - 016:
+    - `ChatGoogle` stream แล้ว `concat` ทุกชิ้นได้ `usage_metadata` ที่ `input_tokens` และ `output_tokens` มากกว่า 0 (`exercise-3.google`) และ token ขาเข้าตาที่ 2 มากกว่าตาที่ 1
+    - Gemini รับประวัติที่ตัดแล้วซึ่งขึ้นต้นด้วย system ตามด้วย human (`exercise-2.google`) และรับประวัติที่มี `AIMessage` ที่สร้างจากข้อความ stream
+    - Gemini ไม่ error กับ system message ที่เป็นตัวแรกของ `history` เมื่อเรียก `model.stream(history)` (`example.google`)
+    - Ollama จริงอาจรายงานเฉพาะ token ที่ไม่ได้อยู่ใน cache ทำให้ N ตาที่ 2 ไม่มากกว่าตาที่ 1
+    - ChatGoogle อาจใส่ usage_metadata สะสมมาทุกชิ้น ทำให้ concat รวมซ้ำ
+    - ลองแชทด้วยมือกับ provider จริง (แผนนี้ไม่มีขั้นลองแชทด้วยมือ เพราะ shim เปิดได้ผ่าน `pnpm verify` เท่านั้น): `pnpm lesson 016 example.ollama` พิมพ์ไทย ลบตัวอักษรไทยด้วย Backspace กด Enter เปล่า แล้วพิมพ์ `จบ` โปรแกรมต้องจบเองและพิมพ์ `ลาก่อนครับ` · ลองซ้ำด้วย Ctrl+D (macOS) และ Ctrl+C
+    - รายการ `ask()` ใน `internal/windows-checklist.md` (หัวข้อ "ทดสอบเมื่อถึงแผนที่ 2") ครอบคลุมข้อที่เกี่ยวกับบท 016 บน Windows: Ctrl+D ใน PowerShell ไม่จบ, Ctrl+Z แล้ว Enter จบ, และ pipe ไทยจาก PowerShell 5.1 (Task 14 แก้ให้หัวข้อนั้นชี้มาที่บทนี้)
