@@ -1,14 +1,9 @@
-// แบบฝึกหัด 2: ดูว่า content เป็นแบบไหน
+// เฉลยแบบฝึกหัด 2: ดูว่า content เป็นแบบไหน
 //
 // โจทย์: เติม contentKind ให้บอกว่า content ของ AIMessage เป็น "string" หรือ "array" แล้วพิมพ์ 2 บรรทัด
 //   ชนิดของ content: string
 //   text: <คำตอบของโมเดล>
-//
-// แนวทาง:
-// 1. content ของ AIMessage มีชนิด string หรือ array (ดูตัวอย่างขั้นที่ 1 ใน example.ollama.ts)
-// 2. จุด 👉: ใช้ typeof content === "string" หรือ Array.isArray(content) แล้วคืน "string" หรือ "array"
-// 3. ตอนนี้ contentKind คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 007 exercise-2.ollama
+// รัน: pnpm lesson 007 exercise-2.ollama
 import type { AIMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
@@ -22,18 +17,13 @@ const model = new ChatOllama({
   headers: apiKey === undefined ? undefined : { Authorization: `Bearer ${apiKey}` },
 });
 
-function contentKind(content: AIMessage["content"]): "string" | "array" | undefined {
-  void content; // บรรทัดนี้กัน lint เตือนว่าตัวแปร content ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ content
-  // 👉 คืน "string" หรือ "array" ตามชนิดของ content (แทนบรรทัด return undefined)
-  return undefined;
+function contentKind(content: AIMessage["content"]): "string" | "array" {
+  // เฉลยจุดที่ 1: content เป็นได้แค่ string หรือ array ตรวจด้วย typeof ก็พอ
+  // (Gemini อาจคืน array จึงต้องแยกแยะ และการอ่านข้อความควรใช้ .text เสมอ ไม่อ่าน content เอง)
+  return typeof content === "string" ? "string" : "array";
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ contentKind ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  if (contentKind("ทดสอบ") === undefined) {
-    console.log("👉 ยังไม่ได้เติม contentKind (ดูบรรทัดที่มี 👉)");
-    return;
-  }
 
   const res = await model.invoke(QUESTION);
   console.log(`ชนิดของ content: ${contentKind(res.content)}`);
