@@ -1,15 +1,10 @@
-// แบบฝึกหัด 1: อธิบาย error เป็นภาษาไทย
+// เฉลยแบบฝึกหัด 1: อธิบาย error เป็นภาษาไทย
 //
 // โจทย์: เติม explainError ให้รับ error แล้วคืนข้อความภาษาไทยสั้นๆ ที่บอกว่าเกิดอะไรขึ้นและต้องแก้อะไร
 // (แยกอย่างน้อย: ต่อ provider ไม่ได้ / ไม่พบโมเดล (404) / ที่เหลือ) ไฟล์จะทำให้เกิด error จริง 2 สถานการณ์ แล้วพิมพ์
 //   สถานการณ์ N: <ชื่อ>
 //     อธิบาย: <ข้อความของคุณ>
-//
-// แนวทาง:
-// 1. ใน example ของบทนี้ explainError ดู 2 อย่างตามลำดับ: เลข status ก่อน แล้วชนิดของ error (ไฟล์นี้มี statusOf ให้ใช้แล้ว)
-// 2. สถานการณ์ในไฟล์นี้เกิด error ชนิดอะไรและมี status หรือไม่ ลองรันดูผลโดยเปลี่ยนให้พิมพ์ e ตรงๆ ชั่วคราวก็ได้
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ explainError คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 012 exercise-1.ollama
+// รัน: pnpm lesson 012 exercise-1.ollama
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
 
@@ -32,11 +27,15 @@ function makeModel(overrides: { baseUrl?: string; model?: string }): ChatOllama 
   });
 }
 
-function explainError(e: unknown): string | undefined {
-  void e; // บรรทัดนี้กัน lint เตือนว่าตัวแปร e ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ e
-  void statusOf; // บรรทัดนี้กัน lint เตือนว่า statusOf ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้
-  // 👉 คืนข้อความอธิบายภาษาไทยตามชนิดของ e (แทนบรรทัด return undefined)
-  return undefined;
+function explainError(e: unknown): string {
+  // เฉลยจุดที่ 1: ดูเลข status ก่อน เพราะบอกสาเหตุได้ตรงกว่า แล้วค่อยดูชนิดของ error
+  // TypeError ที่ไม่มี status คือต่อ provider ไม่ได้เลย (ยังไม่ถึงขั้นตอบกลับ) ส่วนที่เหลือคืนข้อความกลางๆ ให้ไปดู stack trace
+  const status = statusOf(e);
+  if (status === 404) return "ไม่พบโมเดล ตรวจชื่อโมเดลในไฟล์ .env ว่าสะกดถูกและใช้ได้จริง";
+  if (status === 401) return "key ผิดหรือหมดอายุ ตรวจ key ในไฟล์ .env";
+  if (status === 429) return "เรียกถี่เกินหรือโควต้าหมด รอสักครู่แล้วลองใหม่";
+  if (e instanceof TypeError) return "ต่อ provider ไม่ได้ ตรวจว่า provider เปิดอยู่และ URL ถูกต้อง";
+  return "ไม่รู้จัก error นี้ ดูข้อความและ stack trace";
 }
 
 function report(n: number, title: string, e: unknown): void {
@@ -55,12 +54,6 @@ async function catchError(model: { invoke: (input: string) => Promise<unknown> }
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ explainError ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  if (explainError(new TypeError("fetch failed")) === undefined) {
-    console.log("👉 ยังไม่ได้เติม explainError (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   report(1, "ต่อ Ollama ไม่ได้", await catchError(makeModel({ baseUrl: "http://127.0.0.1:9" })));
   report(2, "ชื่อโมเดลผิด", await catchError(makeModel({ model: env("OLLAMA_MODEL") + "-not-real" })));
 }

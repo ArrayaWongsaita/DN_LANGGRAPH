@@ -1,15 +1,10 @@
-// แบบฝึกหัด 1: ดึงความคิดของโมเดลออกมาจาก AIMessage
+// เฉลยแบบฝึกหัด 1: ดึงความคิดของโมเดลออกมาจาก AIMessage
 //
 // โจทย์: เติม reasoningOf ให้คืนข้อความความคิดของโมเดล (ต่อทุก block ชนิด reasoning เข้าด้วยกัน)
 // แล้วไฟล์จะถามโมเดลด้วย think: true และพิมพ์ 2 ส่วน
 //   ความคิด (80 ตัวอักษรแรก): <ความคิด 80 ตัวอักษรแรก>
 //   คำตอบ: <คำตอบ>
-//
-// แนวทาง:
-// 1. ขั้นที่ 1 ของ example.ollama.ts วน contentBlocks และแยกชนิดของ block ด้วย block.type อยู่แล้ว ใช้วิธีเดียวกัน
-// 2. ถ้า message ไม่มี block reasoning เลย ให้คืนสตริงว่าง "" (ไม่ใช่ undefined)
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ reasoningOf คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 011 exercise-1.ollama
+// รัน: pnpm lesson 011 exercise-1.ollama
 import { AIMessage } from "@langchain/core/messages";
 import { ChatOllama } from "@langchain/ollama";
 import { env, optionalEnv } from "../../src/lib/env";
@@ -24,27 +19,19 @@ const model = new ChatOllama({
   think: true,
 });
 
-function reasoningOf(msg: AIMessage): string | undefined {
-  void msg; // บรรทัดนี้กัน lint เตือนว่าตัวแปร msg ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ msg
-  // 👉 คืนความคิดของ msg โดยต่อ reasoning ของทุก block ชนิด reasoning (แทนบรรทัด return undefined)
-  return undefined;
+function reasoningOf(msg: AIMessage): string {
+  // เฉลยจุดที่ 1: ความคิดอยู่ใน block ชนิด reasoning ของ contentBlocks (ไม่ปนใน .text) จึงวนต่อทุก block ชนิดนี้
+  // เริ่มจากสตริงว่าง ถ้าไม่มี block reasoning เลยจะคืน "" ตามโจทย์ ไม่ใช่ undefined
+  let thought = "";
+  for (const block of msg.contentBlocks) {
+    if (block.type === "reasoning") thought += block.reasoning;
+  }
+  return thought;
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้ลองเรียก reasoningOf กับ AIMessage ปลอมก่อน กันไม่ให้เรียกโมเดลทั้งที่ยังไม่ได้เติม (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  const fake = new AIMessage({
-    content: [
-      { type: "reasoning", reasoning: "ลูกค้าถามเรื่องคืนสินค้า" },
-      { type: "text", text: "คืนได้ภายใน 7 วันครับ" },
-    ],
-  });
-  if (reasoningOf(fake) === undefined) {
-    console.log("👉 ยังไม่ได้เติม reasoningOf (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   const res = await model.invoke(QUESTION);
-  const thought = [...(reasoningOf(res) ?? "")].slice(0, 80).join("").replace(/\s+/g, " ");
+  const thought = [...reasoningOf(res)].slice(0, 80).join("").replace(/\s+/g, " ");
   console.log(`ความคิด (80 ตัวอักษรแรก): ${thought}`);
   console.log(`คำตอบ: ${res.text}`);
 }
