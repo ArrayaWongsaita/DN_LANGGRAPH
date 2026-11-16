@@ -1,5 +1,7 @@
 import { ENV_LESSON, isOllamaCloudDirect, optionalEnv } from "../../src/lib/env";
 
+export const SETUP_LESSON = "002";
+
 export interface CheckResult { ok: boolean; label: string; detail?: string; lesson?: string }
 export interface DoctorDeps {
   env: Record<string, string | undefined>;
@@ -40,13 +42,13 @@ function checkNode(deps: DoctorDeps): CheckResult {
   const major = Number(/^v?(\d+)/.exec(deps.nodeVersion)?.[1]);
   return major >= 24
     ? pass(`Node ${deps.nodeVersion}`)
-    : fail(`Node ${deps.nodeVersion}`, "ต้องใช้ Node 24 ขึ้นไป ให้ติดตั้งรุ่นใหม่จาก nodejs.org", "002");
+    : fail(`Node ${deps.nodeVersion}`, "ต้องใช้ Node 24 ขึ้นไป ให้ติดตั้งรุ่นใหม่จาก nodejs.org", SETUP_LESSON);
 }
 
 function checkPnpm(deps: DoctorDeps): CheckResult {
   return deps.userAgent?.startsWith("pnpm/12.")
     ? pass("pnpm 12")
-    : fail("pnpm", "ต้องรันผ่าน pnpm รุ่น 12 (ลอง corepack enable แล้วรันใหม่ด้วย pnpm preflight)", "002");
+    : fail("pnpm", "ต้องรันผ่าน pnpm รุ่น 12 (ลอง corepack enable แล้วรันใหม่ด้วย pnpm preflight)", SETUP_LESSON);
 }
 
 function checkEnvFile(deps: DoctorDeps): CheckResult {
@@ -56,13 +58,13 @@ function checkEnvFile(deps: DoctorDeps): CheckResult {
   } catch {
     content = null;
   }
-  if (content === null) return fail(".env", "ยังไม่มีไฟล์ .env ให้คัดลอกจาก .env.example", "002");
-  if (content.startsWith("﻿")) return fail(".env", "ไฟล์มี BOM นำหน้า: บันทึกใหม่เป็น UTF-8 แบบไม่มี BOM", "002");
+  if (content === null) return fail(".env", "ยังไม่มีไฟล์ .env ให้คัดลอกจาก .env.example", SETUP_LESSON);
+  if (content.startsWith("﻿")) return fail(".env", "ไฟล์มี BOM นำหน้า: บันทึกใหม่เป็น UTF-8 แบบไม่มี BOM", SETUP_LESSON);
   const dup = duplicateKeys(content);
   if (dup.length > 0) {
     const first = dup[0];
     const names = dup.join(", ");
-    return fail(".env", `มีตัวแปรซ้ำหลายบรรทัด: ${names} (บรรทัดหลังสุดจะชนะ ทำให้ค่าที่ใส่ไว้ก่อนหน้าไม่ถูกใช้) ให้เหลือบรรทัดเดียว`, ENV_LESSON[first as keyof typeof ENV_LESSON] ?? "002");
+    return fail(".env", `มีตัวแปรซ้ำหลายบรรทัด: ${names} (บรรทัดหลังสุดจะชนะ ทำให้ค่าที่ใส่ไว้ก่อนหน้าไม่ถูกใช้) ให้เหลือบรรทัดเดียว`, ENV_LESSON[first as keyof typeof ENV_LESSON] ?? SETUP_LESSON);
   }
   return pass(".env");
 }
@@ -139,9 +141,9 @@ export async function runDoctor(deps: DoctorDeps): Promise<CheckResult[]> {
     }
   };
   return [
-    await guard("Node", "002", () => checkNode(deps)),
-    await guard("pnpm", "002", () => checkPnpm(deps)),
-    await guard(".env", "002", () => checkEnvFile(deps)),
+    await guard("Node", SETUP_LESSON, () => checkNode(deps)),
+    await guard("pnpm", SETUP_LESSON, () => checkPnpm(deps)),
+    await guard(".env", SETUP_LESSON, () => checkEnvFile(deps)),
     await guard("Google Gemini", ENV_LESSON.GOOGLE_API_KEY, () => checkGoogle(deps)),
     await guard("Ollama", ENV_LESSON.OLLAMA_BASE_URL, () => checkOllama(deps)),
   ];

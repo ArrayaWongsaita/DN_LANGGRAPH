@@ -56,6 +56,25 @@ export function checkLessonFolders(root: string): Problem[] {
   return problems;
 }
 
+// Headings ("## x") outside code fences. Fence open: 3+ backticks/tildes (indent <= 3); close: same char, >= open length, only spaces after.
+export function readmeHeadings(text: string): string[] {
+  const out: string[] = [];
+  let fence: { ch: string; len: number } | null = null;
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (fence) {
+      if (m && m[1][0] === fence.ch && m[1].length >= fence.len && m[2].trim() === "") fence = null;
+      continue;
+    }
+    if (m) {
+      fence = { ch: m[1][0], len: m[1].length };
+      continue;
+    }
+    if (line.startsWith("## ")) out.push(line.slice(3).trim());
+  }
+  return out;
+}
+
 export function checkReadmeHeadings(root: string): Problem[] {
   const problems: Problem[] = [];
   for (const lesson of lessons(root)) {
@@ -65,7 +84,7 @@ export function checkReadmeHeadings(root: string): Problem[] {
       problems.push({ file, message: "ไม่มี README.md" });
       continue;
     }
-    const found = fs.readFileSync(readme, "utf8").split(/\r?\n/).filter((l) => l.startsWith("## ")).map((l) => l.slice(3).trim());
+    const found = readmeHeadings(fs.readFileSync(readme, "utf8"));
     const needStudio = Number(lesson.number) >= Number(STUDIO_FROM);
     const required = README_HEADINGS.filter((h) => needStudio || h !== STUDIO_HEADING);
     let ok = true;

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { formatResults, runDoctor, type DoctorDeps } from "./doctor-checks";
+import { ENV_LESSON } from "../../src/lib/env";
+import { SETUP_LESSON, formatResults, runDoctor, type DoctorDeps } from "./doctor-checks";
 
 const KEY = "AIza" + "FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE123";
 const CLOUD_KEY = "oc_sk" + "_FAKEFAKEFAKEFAKEFAKE";
@@ -52,22 +53,22 @@ function okDeps(over: Partial<DoctorDeps> = {}): DoctorDeps {
 describe("runDoctor", () => {
   it("ครบทุกอย่าง → ผ่านหมด", async () => expect((await runDoctor(okDeps())).every((r) => r.ok)).toBe(true));
   it("Node 22 → ❌ บท 002", async () =>
-    expect((await runDoctor(okDeps({ nodeVersion: "v22.12.0" })))[0]).toMatchObject({ ok: false, lesson: "002" }));
+    expect((await runDoctor(okDeps({ nodeVersion: "v22.12.0" })))[0]).toMatchObject({ ok: false, lesson: SETUP_LESSON }));
   it("ไม่ใช่ pnpm 12 → ❌ บท 002", async () => {
     const r = await runDoctor(okDeps({ userAgent: "npm/10.0.0 node/v24" }));
-    expect(r[1]).toMatchObject({ ok: false, lesson: "002" });
+    expect(r[1]).toMatchObject({ ok: false, lesson: SETUP_LESSON });
   });
   it("ไม่มี .env → ❌ บท 002", async () => {
     const r = await runDoctor(okDeps({ readEnvFile: () => null }));
-    expect(r[2]).toMatchObject({ ok: false, lesson: "002" });
+    expect(r[2]).toMatchObject({ ok: false, lesson: SETUP_LESSON });
   });
   it(".env มี BOM → ❌ บท 002", async () => {
     const r = await runDoctor(okDeps({ readEnvFile: () => `${BOM}# x\nGOOGLE_API_KEY=k` }));
-    expect(r.find((x) => x.lesson === "002" && !x.ok)?.detail).toContain("BOM");
+    expect(r.find((x) => x.lesson === SETUP_LESSON && !x.ok)?.detail).toContain("BOM");
   });
   it("Google ตอบ 400 → ❌ บท 005 และไม่พิมพ์ key", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ google: 400 }) }));
-    const g = r.find((x) => x.lesson === "005")!;
+    const g = r.find((x) => x.lesson === ENV_LESSON.GOOGLE_API_KEY)!;
     expect(g.ok).toBe(false);
     expect(formatResults(r)).not.toContain(KEY);
   });
@@ -88,7 +89,7 @@ describe("runDoctor", () => {
   it(".env มีตัวแปรซ้ำ → ❌ บอกชื่อตัวแปรและบท", async () => {
     const r = await runDoctor(okDeps({ readEnvFile: () => "OLLAMA_API_KEY=abc\nGOOGLE_API_KEY=x\nOLLAMA_API_KEY=\n" }));
     const e = r[2];
-    expect(e).toMatchObject({ ok: false, lesson: "004" });
+    expect(e).toMatchObject({ ok: false, lesson: ENV_LESSON.OLLAMA_API_KEY });
     expect(e.detail).toContain("OLLAMA_API_KEY");
     expect(e.detail).not.toContain("abc");
   });
@@ -107,27 +108,27 @@ describe("runDoctor", () => {
   });
   it("Google ไม่มีโมเดลที่ตั้งไว้ → ❌ บท 005", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ googleModels: ["other"] }) }));
-    expect(r.find((x) => x.lesson === "005")?.ok).toBe(false);
+    expect(r.find((x) => x.lesson === ENV_LESSON.GOOGLE_API_KEY)?.ok).toBe(false);
   });
   it("Google ต่อไม่ได้ → ❌ บท 005 ไม่ crash", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ googleThrows: true }) }));
-    expect(r.find((x) => x.lesson === "005")?.ok).toBe(false);
+    expect(r.find((x) => x.lesson === ENV_LESSON.GOOGLE_API_KEY)?.ok).toBe(false);
   });
   it("ไม่ได้ตั้ง OLLAMA_BASE_URL → ❌ บท 003", async () => {
     const r = await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: undefined } }));
-    expect(r.find((x) => x.lesson === "003")?.ok).toBe(false);
+    expect(r.find((x) => x.lesson === ENV_LESSON.OLLAMA_BASE_URL)?.ok).toBe(false);
   });
   it("Ollama ในเครื่องไม่ได้เปิด → ❌ บท 003", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ ollamaThrows: true }) }));
-    expect(r.find((x) => x.lesson === "003")?.detail).toContain("เปิดโปรแกรม Ollama");
+    expect(r.find((x) => x.lesson === ENV_LESSON.OLLAMA_BASE_URL)?.detail).toContain("เปิดโปรแกรม Ollama");
   });
   it("ยังไม่ pull โมเดล → บอกคำสั่ง", async () => {
     const r = await runDoctor(okDeps({ fetch: fakeFetch({ ollamaModels: [] }) }));
-    expect(r.find((x) => x.lesson === "003")?.detail).toContain("ollama pull");
+    expect(r.find((x) => x.lesson === ENV_LESSON.OLLAMA_BASE_URL)?.detail).toContain("ollama pull");
   });
   it("Ollama Cloud key ผิด → ❌ บท 004", async () => {
     const r = await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: "https://ollama.com", OLLAMA_API_KEY: "bad" }, fetch: fakeFetch({ cloud: 401 }) }));
-    expect(r.find((x) => x.lesson === "004")?.ok).toBe(false);
+    expect(r.find((x) => x.lesson === ENV_LESSON.OLLAMA_API_KEY)?.ok).toBe(false);
   });
   it("Cloud 401 และ network ล้ม → ไม่พิมพ์ key", async () => {
     const env = { ...okEnv, OLLAMA_BASE_URL: "https://ollama.com", OLLAMA_API_KEY: CLOUD_KEY };
@@ -140,7 +141,7 @@ describe("runDoctor", () => {
   });
   it("env ผิดรูปแบบ → ❌ ไม่ throw", async () => {
     const r = await runDoctor(okDeps({ env: { ...okEnv, OLLAMA_BASE_URL: "localhost" } }));
-    expect(r.find((x) => x.lesson === "003")?.ok).toBe(false);
+    expect(r.find((x) => x.lesson === ENV_LESSON.OLLAMA_BASE_URL)?.ok).toBe(false);
   });
 });
 

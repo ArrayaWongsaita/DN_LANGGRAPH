@@ -17,6 +17,7 @@ import {
   checkReadmeHeadings,
   checkThaiSaraAm,
   checkVerifyCoverage,
+  readmeHeadings,
   type Problem,
 } from "./course-rules";
 
@@ -50,10 +51,11 @@ function allRules(root: string): Problem[] {
 function goodRoot(): string {
   const root = newRoot();
   const readme = readmeText(README_HEADINGS.filter((h) => h !== "เปิดดูใน Studio"));
-  for (const d of ["001-intro", "002-a", "003-b", "004-c", "005-d", "006-raw-fetch"]) write(root, `lessons/${d}/README.md`, readme);
-  write(root, "lessons/006-raw-fetch/example.ollama.ts", "export const a = 1;\n");
-  write(root, "lessons/006-raw-fetch/example.google.ts", "export const a = 2;\n");
-  write(root, "internal/checks/006.ts", "export {};\n");
+  const earlier = Array.from({ length: Number(PROVIDER_PAIRS_FROM) - 1 }, (_, i) => `${String(i + 1).padStart(3, "0")}-a`);
+  for (const d of [...earlier, `${PROVIDER_PAIRS_FROM}-raw-fetch`]) write(root, `lessons/${d}/README.md`, readme);
+  write(root, `lessons/${PROVIDER_PAIRS_FROM}-raw-fetch/example.ollama.ts`, "export const a = 1;\n");
+  write(root, `lessons/${PROVIDER_PAIRS_FROM}-raw-fetch/example.google.ts`, "export const a = 2;\n");
+  write(root, `internal/checks/${PROVIDER_PAIRS_FROM}.ts`, "export {};\n");
   write(root, "src/lib/env.ts", 'export const m = env("OLLAMA_MODEL");\n');
   write(root, "README.md", "# หลักสูตร\n");
   return root;
@@ -128,17 +130,29 @@ describe("course rules", () => {
   it("บท 001 ไม่ต้องมี Studio แต่ 046 ต้องมี", () => {
     const without = README_HEADINGS.filter((h) => h !== "เปิดดูใน Studio");
     expect(checkReadmeHeadings(rootWithReadme("001-a", without))).toEqual([]);
-    expect(checkReadmeHeadings(rootWithReadme("046-studio", without))).toHaveLength(1);
-    expect(checkReadmeHeadings(rootWithReadme("046-studio", README_HEADINGS))).toEqual([]);
+    expect(checkReadmeHeadings(rootWithReadme(`${STUDIO_FROM}-studio`, without))).toHaveLength(1);
+    expect(checkReadmeHeadings(rootWithReadme(`${STUDIO_FROM}-studio`, README_HEADINGS))).toEqual([]);
+  });
+  it("ไม่นับ ## ใน code fence ทั้ง ``` และ ~~~", () => {
+    const text = ["## ก", "```text", "## บทบาท", "```", "~~~", "## ขอบเขต", "~~~", "````md", "```", "## ใน fence 4 ตัว", "````", "## ข"].join("\n");
+    expect(readmeHeadings(text)).toEqual(["ก", "ข"]);
+  });
+  it("fence ที่ไม่ปิดถือเป็นโค้ดถึงท้ายไฟล์", () => expect(readmeHeadings("## ก\n```\n## ข\n")).toEqual(["ก"]));
+  it("prompt ใน fence ที่มี ## แบบฝึกหัด ไม่ทำให้ฟ้องลำดับ", () => {
+    const hs = README_HEADINGS.filter((h) => h !== "เปิดดูใน Studio");
+    const parts = hs.map((h) => (h === "เนื้อหา" ? `## ${h}\n\n\`\`\`text\n## แบบฝึกหัด\n## บทบาท\n\`\`\`\n` : `## ${h}\n`));
+    const root = newRoot();
+    write(root, "lessons/001-a/README.md", parts.join("\n"));
+    expect(checkReadmeHeadings(root)).toEqual([]);
   });
   it("ข้ามภาคผนวก", () => expect(checkReadmeHeadings(rootWith(["appendix-a-x"]))).toEqual([]));
 
   it("006 มี ollama แต่ไม่มี google", () =>
-    expect(checkProviderPairs(rootWithFiles("006-raw-fetch", ["example.ollama.ts"]))).toHaveLength(1));
+    expect(checkProviderPairs(rootWithFiles(`${PROVIDER_PAIRS_FROM}-raw-fetch`, ["example.ollama.ts"]))).toHaveLength(1));
   it("google ไม่มีคู่ ollama", () =>
-    expect(checkProviderPairs(rootWithFiles("006-raw-fetch", ["example.google.ts"]))).toHaveLength(1));
-  it("006 มี example.ts เปล่า", () => expect(checkProviderPairs(rootWithFiles("006-raw-fetch", ["example.ts"]))).toHaveLength(1));
-  it("006 มี exercise-1.ts เปล่า", () => expect(checkProviderPairs(rootWithFiles("006-raw-fetch", ["exercise-1.ts"]))).toHaveLength(1));
+    expect(checkProviderPairs(rootWithFiles(`${PROVIDER_PAIRS_FROM}-raw-fetch`, ["example.google.ts"]))).toHaveLength(1));
+  it("006 มี example.ts เปล่า", () => expect(checkProviderPairs(rootWithFiles(`${PROVIDER_PAIRS_FROM}-raw-fetch`, ["example.ts"]))).toHaveLength(1));
+  it("006 มี exercise-1.ts เปล่า", () => expect(checkProviderPairs(rootWithFiles(`${PROVIDER_PAIRS_FROM}-raw-fetch`, ["exercise-1.ts"]))).toHaveLength(1));
   it("บทนอกช่วง 006-027 ใช้ example.ts ได้", () =>
     expect(checkProviderPairs(rootWithFiles("002-setup-project", ["example.ts"]))).toEqual([]));
 

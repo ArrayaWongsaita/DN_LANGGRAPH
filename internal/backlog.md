@@ -18,3 +18,4 @@
 - เพิ่ม `expectBlock` ใน `internal/verify/expect.ts` ตรวจบล็อก "ต้องตรงทุกตัว" ใน README อัตโนมัติ (แผน 22)
 - test ที่ยังขาด: ทางแยก `child.error` ของ runner, SIGTERM-only timeout, บัฟเฟอร์ไม่จำกัด, parse argv (แผน 22)
 - แผน 3: comment ใน scripts/lib/exercise-guard.ts (WeakMap/guardTargets) วางผิดที่ · กฎ pnpm lesson MMM==NNN ยังไม่มีทางหนีสำหรับบทที่ตั้งใจอ้างบทอื่น
+- แผน 4: ข้อความท้าย renumber ยังบอกให้แก้ *.test.ts เอง · test ของกฎ fence ใน README ไม่ครอบคลุม indented fence/closer มีข้อความต่อท้าย

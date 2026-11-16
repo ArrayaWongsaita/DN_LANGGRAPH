@@ -87,6 +87,22 @@
 - ตัวเลขใน `DN_USAGE_FILE` ตรงกับ `usage_metadata` ทุกครั้ง · `ChatOllama` 1.3.0 ส่ง `stream: true` เสมอแม้เรียก `invoke` จึงผ่านทาง NDJSON ของ shim ทั้งคู่
 - **ไม่ต้องแก้ hook และไม่ได้เพิ่ม test**
 
+### structured output ผ่าน opencode shim (แผน 3)
+
+ผลของ `deepseek-v4.1-flash` ผ่าน opencode shim (`ChatOllama` -> shim -> OpenAI chat completions) เท่านั้น ไม่ใช่ผลของ Ollama หรือ Gemini · พฤติกรรมฝั่ง LangChain (undefined / null / exception) ตรึงด้วย `internal/dev/opencode-shim.structured.test.ts` กับ upstream ปลอม
+
+| รอบ | สิ่งที่ทำ | ผล |
+|---|---|---|
+| A | `withStructuredOutput(SearchFilter, { name: "search_filter", method: "functionCalling" })` 5 ครั้ง | ได้ object 5/5 · undefined 0 · exception 0 · `null` ใน field ไม่บังคับ 0 ครั้ง · `maxPrice` เป็น 400 5/5 |
+| B | `CustomerQuestion` + `includeRaw` กับ 6 ข้อความ ด้วย `.batch(…, { maxConcurrency: 2 })` | `parsed` ไม่เป็น null 6/6 · category ตรงที่คาด 6/6 |
+| C | `format: "json"` + prompt ขอ JSON 5 ครั้ง | `JSON.parse` ตรงๆ ผ่าน 5/5 |
+| D | ไม่เปิด JSON mode + prompt เดียวกัน 5 ครั้ง | `JSON.parse` ตรงๆ ผ่าน 5/5 · code fence 0 ครั้ง (deepseek ตอบ JSON เปล่าเมื่อสั่งชัด ผู้เรียนที่ใช้โมเดลอื่นอาจเจอ fence จึงยังสอน `extractJson`) |
+| E | `withStructuredOutput(SearchFilter)` ค่าเริ่มต้น (jsonSchema) 2 ครั้ง | ใช้ได้ 2/2 ได้ object ถูกต้อง ไม่มี error |
+
+- **กฎที่ใช้ตัดสิน:** A >= 4/5 และ B >= 5/6 -> ทำแผนต่อตามเดิม · `null` 2 ครั้งขึ้นไป -> `.nullish()` · C ไม่ถึง 5/5 -> ลดเกณฑ์ 020 exercise-2 · D, E ใช้เขียน README เท่านั้น
+- **ผลที่เลือก:** A 5/5 และ B 6/6 ผ่านเกณฑ์ ไม่มี `null` (0 < 2) จึงคง `.optional()` ไม่ต้องใช้ `.nullish()` · C ได้ 5/5 จึงคงเกณฑ์ `020 exercise-2` ที่ 3/3 · ไม่ต้องแก้ shim และไม่เติม `tool_choice`
+- **ข้อควรระวัง:** ผลเป็นของ deepseek ผ่าน shim เท่านั้น (ทดลอง 1 รอบ ตัวอย่างน้อย) ต้องยืนยันกับ Ollama / Gemini จริงใน 6b
+
 ### langgraph-cli dev
 
 ทดลองในโฟลเดอร์ที่จัดเหมือน repo (`lessons/046-studio/example.ts` import `../../src/lib/model` แบบไม่ใส่นามสกุล, `.langgraph/langgraph.json` สร้างแยก, ติดตั้งด้วย pnpm 12.21.0, TypeScript 6.0.3)
@@ -468,3 +484,23 @@
     - ค่าที่ส่งต่อจากการรีวิว `ask()` (บท 016 บน Windows): pipe ภาษาไทยจาก PowerShell 5.1 (`"สวัสดี" | pnpm lesson 016 ...`) อาจเพี้ยนตาม `$OutputEncoding` และอาจมี BOM นำหน้า (พิมพ์เองใน terminal ไม่มีปัญหา) · Ctrl+D ใน PowerShell ไม่ใช่ EOF ต้องกด Ctrl+Z แล้ว Enter · จดผลไว้ใน "ผล 6b" · ผู้เรียนควรออกด้วยการพิมพ์ `จบ` หรือ Ctrl+C
 - เฉลย `exercise-*.google.ts` ของบท 007–016 บน `solutions` ทั้ง 22 ไฟล์ (007: 3 ไฟล์, 008–015: บทละ 2 ไฟล์ รวม 16, 016: 3) ยังไม่เคยรันกับ Gemini จริง ต้องรันตามข้อบน (solutions) ให้ผ่านก่อนลบหมายเหตุ
 - ไม่ต้องบันทึกอะไรของแผน 2 ใน `.superpowers/` ตอนทำ 6b: รายงานและ ledger ชั่วคราวอยู่ใน `.superpowers/sdd/` ไม่ commit · ผลจริงเขียนต่อท้าย "ผล 6b" ในไฟล์นี้เท่านั้น
+
+### 6b-12: บท 017–022 กับ provider จริง (แผน 3 ตรวจได้แค่ opencode-dev)
+
+- [ ] main: `pnpm verify 017-022 --provider google --examples-only --repeat 3` · `--provider ollama-cloud --examples-only --repeat 3` · `--provider ollama --examples-only`
+- [ ] solutions (`../LANGGRAPH-solutions`): `pnpm verify 017-022 --provider google --repeat 3` · `--provider ollama-cloud --repeat 3` · `--provider ollama`
+- [ ] รันผ่านแล้วลบหมายเหตุ ".google.ts ยังไม่ได้ทดสอบ" ใน README 017–022 และคอมเมนต์หมายเหตุในเฉลย `.google.ts`
+- [ ] `grep -rn "TODO(6b)" lessons` ไม่เหลือ
+- เรื่องที่ต้องดูเป็นรายบท:
+  - 017: Gemini (ผ่าน `systemInstruction`) และโมเดลของ Ollama ใส่ marker `[นอกขอบเขต]` / `[ไม่ตอบ]` ตามสั่งไหม · ถ้าไม่ ให้ปรับถ้อยคำใน `PARTS` ไม่ใช่ลดเกณฑ์
+  - 018: ส่ง prompt เกิน 4096 token ให้ Ollama ในเครื่องที่ไม่ได้ตั้ง `OLLAMA_NUM_CTX` แล้วดู `prompt_eval_count` และกฎใน system (เติม TODO(6b) ใน README) · จำนวน token ขาเข้าของรายการสินค้าภาษาไทยบน Gemini
+  - 019: Gemini รับ few-shot ที่มี assistant message · ความแม่นของ few-shot บน Ollama Cloud (เกณฑ์ X ≥ 4)
+  - structured output (บท 020–022 ผลของ 6a ได้จาก deepseek ผ่าน opencode shim เท่านั้น ดูหัวข้อ "structured output ผ่าน opencode shim (แผน 3)" ข้างบน ต้องยืนยันกับ provider จริง):
+    - อัตรา `null` ในฟิลด์ที่ไม่บังคับของ Ollama (ในเครื่องและ Cloud) และ Gemini: ผล 6a คือ 0 จาก 5 ครั้ง ถ้า provider จริงส่ง `null` 2 ครั้งขึ้นไป ให้เปลี่ยน schema ในบท 020–022 จาก `.optional()` เป็น `.nullish()` (และปรับเกณฑ์/README ให้ตรง)
+    - เมื่อโมเดลตอบเป็นข้อความธรรมดาแทนการเรียกเครื่องมือ (`functionCalling`) `withStructuredOutput` คืน `undefined` (ไม่ throw) ตามที่ unit test ของ shim ตรึงไว้ ให้ดูว่าโมเดลจริงเข้ากรณีนี้บ่อยแค่ไหน และบทที่ตรวจ `=== undefined` ยังพิมพ์เหตุเป็นไทยได้ถูกต้อง
+    - `method: "jsonSchema"` บน Ollama Cloud: เอกสารออกแบบข้อ 3 บอกว่าไม่รองรับ ลองจริงว่าได้ error แบบไหนหรือใช้ได้ (ถ้าใช้ได้ ให้ทบทวนข้อความใน README บท 021 ที่พูดถึงทางนี้) · ค่าเริ่มต้นของ `ChatOllama` คือ `jsonSchema` (ส่ง schema ใน `format`) ลองด้วยโมเดลที่เลือกใช้จริง
+    - Ollama ในเครื่อง: `functionCalling` ใช้ได้ไหมกับโมเดลที่เลือก (`ChatOllama` ไม่มี `tool_choice` จึงต้องพึ่งข้อความ "ตอบโดยเรียกเครื่องมือ <ชื่อ> เท่านั้น" ใน system) และโมเดลรุ่นนั้นรองรับ tools หรือไม่
+    - Gemini: ค่าเริ่มต้นของ `ChatGoogle.withStructuredOutput` คือ `functionCalling` ที่บังคับ `tool_choice` ดูว่าได้ object ตาม schema ทุกครั้ง ไม่ได้ `undefined` และ enum ผิด/ฟิลด์ขาดเกิดบ่อยแค่ไหน · `responseMimeType: "application/json"` (JSON mode ของบท 020 แบบฝึกหัด 2) ทำงานกับ `GOOGLE_MODEL` ที่เลือก และ `JSON.parse` ตรงๆ ผ่านกี่ครั้งจาก 5
+    - JSON mode ของ Ollama (`format: "json"`) ผ่าน `JSON.parse` ตรงๆ กี่ครั้งจาก 5 (ผล 6a: 5/5 ทั้งแบบเปิดและไม่เปิด JSON mode) และโมเดลที่ห่อด้วย ```` ```json ```` เจอบ่อยแค่ไหน (6a เจอ 0 ครั้ง ผู้เรียนที่ใช้โมเดลอื่นอาจเจอ)
+    - ผลทั้งหมดนี้ใช้ปรับ README และเกณฑ์ของบท 020–022 เท่านั้น ห้ามลดเกณฑ์โดยไม่จดเหตุผลลง "ผล 6b"
+  - ไฟล์เฉลย `exercise-*.google.ts` ของบท 017–019 บน `solutions` (บทละ 2 ไฟล์ รวม 6 ไฟล์) ยังไม่เคยรันกับ Gemini จริง
