@@ -68,6 +68,7 @@
   3. `InMemoryCache` + `cachePolicy`: state ที่เป็น messages ต้องใช้ `keyFunc`
   4. hosting: ตัดสินจากเอกสารเท่านั้น ยังไม่ได้ deploy
 - **ข้อที่ผลขึ้นกับโมเดล ทดสอบกับ `deepseek-v4.1-flash` ผ่าน opencode shim เท่านั้น ยังไม่ใช่ provider จริง:** usage hook (Step 2), langgraph-cli dev ที่รัน graph ผ่านโมเดล, `useStream` ทั้ง 2 ทาง, Agent Chat UI, `bindTools` กับ tool จาก MCP, `maxConcurrency` แบบเรียกโมเดล, cache, agentevals (`createAgent` และ LLM judge) · shim แปลง `/api/chat` ของ Ollama เป็น OpenAI chat completions และส่งผลแบบไม่ stream แล้วแตกเป็น NDJSON 2 chunk · พฤติกรรมของ tool call, structured output, streaming และตัวเลข token กับ Google / Ollama Cloud / Ollama ในเครื่องอาจต่างไป ต้องยืนยันใน 6b และตอนรัน `pnpm verify` กับ provider จริง
+- **shim เลียนของจริงได้แค่ไหน:** (1) stream เป็นของปลอม shim ขอผลแบบไม่ stream จาก upstream แล้วแตกเป็นชิ้นละ 12 grapheme ระยะเวลาระหว่างชิ้นจึงไม่ใช่ของจริง (2) `think: false` ถูกแปลงเป็น `thinking: {type:"disabled"}` ซึ่งใช้ได้กับ deepseek เท่านั้น (3) ชื่อโมเดลที่ไม่ตรงกับ `OPENCODE_DEV_MODEL` ได้ 404 แบบ Ollama (4) ไม่มี 429 และไม่มีลิมิต concurrency จริง
 
 ## ทำแล้ว (6a)
 
