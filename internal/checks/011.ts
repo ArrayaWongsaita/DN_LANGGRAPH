@@ -27,6 +27,8 @@ const example = (label: string, provider: Provider): FileCheck => ({
       const head = rest.slice(0, rest.indexOf("\n") < 0 ? rest.length : rest.indexOf("\n"));
       const m = expectMatches(head, /reasoning (\d+) ตัวอักษร · ใช้เวลา [\d.]+ วินาที · token ขาออก (\d+)$/, `${label} (ชุดที่ ${n})`);
       stats.push(Number(m[1]));
+      // token ขาออกต้องมากกว่า 0 ทั้ง 2 ชุด (0 แปลว่าไม่ได้อ่าน usage_metadata มา)
+      if (Number(m[2]) <= 0) throw new CheckFailure(`${label}: ชุดที่ ${n} token ขาออกเป็น 0 (ไม่ได้อ่าน usage_metadata)`);
       const next = out.indexOf(`ชุดที่ ${n + 1} (`, start);
       const body = next < 0 ? rest : out.slice(start, next);
       expectThai(extractAfter(body, "คำตอบ: ", `${label} (ชุดที่ ${n})`), `${label} (ชุดที่ ${n})`);

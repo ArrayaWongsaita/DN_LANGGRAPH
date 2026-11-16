@@ -64,6 +64,10 @@ export async function main(): Promise<void> {
   // numPredict คือจำนวน token สูงสุดที่โมเดลจะสร้าง ถึงเมื่อไรก็ถูกตัดทันที
   console.log("--- จำกัดความยาว (numPredict 20) ---");
   const res = await makeModel({ numPredict: 20 }).invoke(LONG_QUESTION);
-  console.log(`จบเพราะ: ${String(res.response_metadata.done_reason)}`);
+  const finish: unknown = res.response_metadata.done_reason;
+  if (typeof finish !== "string") {
+    throw new Error("ไม่พบเหตุที่โมเดลหยุดใน response_metadata (ลองพิมพ์ res.response_metadata ดูว่าฟิลด์ชื่ออะไร)");
+  }
+  console.log(`จบเพราะ: ${finish}`);
   console.log(`ได้ข้อความ: ${[...res.text].length} ตัวอักษร`);
 }

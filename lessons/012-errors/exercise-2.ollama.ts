@@ -1,7 +1,7 @@
 // แบบฝึกหัด 2: ตัดสินว่าควรลองเรียกใหม่หรือไม่
 //
 // โจทย์: เติม isRetryable ให้คืน true เมื่อ error น่าจะหายเองถ้าลองใหม่ (TypeError ต่อไม่ติด, status 429, หรือ status 500 ขึ้นไป)
-// และ false เมื่อลองกี่ครั้งก็ไม่หาย (เช่น 404 ชื่อโมเดลผิด, 401 key ผิด) ไฟล์จะทำให้เกิด error จริง 2 สถานการณ์ แล้วพิมพ์
+// และ false เมื่อลองกี่ครั้งก็ไม่หาย (เช่น 404 ชื่อโมเดลผิด, 401 key ผิด) ไฟล์จะทำให้เกิด error จริง 2 สถานการณ์ และมีสถานการณ์ 3 เป็น error ปลอมที่มี status 429 (ไม่ยิงเน็ต) แล้วพิมพ์
 //   สถานการณ์ N: <ชื่อ>
 //     ควรลองใหม่: ใช่ หรือ ไม่ใช่
 //
@@ -63,4 +63,5 @@ export async function main(): Promise<void> {
 
   report(1, "ต่อ Ollama ไม่ได้", await catchError(makeModel({ baseUrl: "http://127.0.0.1:9" })));
   report(2, "ชื่อโมเดลผิด", await catchError(makeModel({ model: env("OLLAMA_MODEL") + "-not-real" })));
+  report(3, "error ปลอม (status_code 429)", Object.assign(new Error("fake"), { status_code: 429 }));
 }

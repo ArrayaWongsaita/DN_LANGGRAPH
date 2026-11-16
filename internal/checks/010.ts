@@ -65,7 +65,7 @@ const exercise2 = (label: string): FileCheck => ({
     for (const n of [1, 2, 3]) {
       const a = answers.get(n);
       if (a === undefined) throw new CheckFailure(`${label}: ไม่พบ "ครั้งที่ ${n}:"`);
-      expectMatches(a, /เวลาเปิด\s*:\s*\d{1,2}[:.]\d{2}\s*[-–]\s*\d{1,2}[:.]\d{2}/, `${label} (ครั้งที่ ${n})`);
+      expectMatches(a, /เวลาเปิด\s*:\s*\d{1,2}[:.]\d{2}\s*[-–—]\s*\d{1,2}[:.]\d{2}/, `${label} (ครั้งที่ ${n})`);
     }
   },
 });

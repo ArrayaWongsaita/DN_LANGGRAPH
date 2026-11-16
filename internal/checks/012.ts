@@ -70,22 +70,36 @@ const exampleGoogle = (label: string): FileCheck => ({
   },
 });
 
-const exercise1 = (label: string): FileCheck => ({
+// ชุดอธิบายต้องไม่ใช่ข้อความเดียวกันทุกสถานการณ์ (กันการคืนสตริงคงที่)
+// ollama: สถานการณ์ 1 (ต่อไม่ติด) กับ 2 (404) ต้องต่างกัน
+// google: เลข status จริงของ Gemini ยังไม่ล็อก (6b) จึงให้สถานการณ์ 1-3 มีข้อความต่างกันอย่างน้อย 2 แบบ (สถานการณ์ 3 เป็น error ปลอม 429)
+const exercise1 = (label: string, provider: "ollama" | "google"): FileCheck => ({
   check: (run) => {
     common(run, label);
     const out = norm(run.stdout);
-    for (const n of [1, 2]) {
-      expectRealText(field(scenarioText(out, n, 2, label), "อธิบาย", `${label} (สถานการณ์ ${n})`), `สถานการณ์ ${n} อธิบาย`, label);
+    const last = provider === "ollama" ? 2 : 3;
+    const explains: string[] = [];
+    for (let n = 1; n <= last; n++) {
+      const e = field(scenarioText(out, n, last, label), "อธิบาย", `${label} (สถานการณ์ ${n})`);
+      expectRealText(e, `สถานการณ์ ${n} อธิบาย`, label);
+      explains.push(e);
+    }
+    if (provider === "ollama" && explains[0] === explains[1]) {
+      throw new CheckFailure(`${label}: สถานการณ์ 1 (ต่อไม่ติด) กับ 2 (ชื่อโมเดลผิด) ต้องอธิบายต่างกัน`);
+    }
+    if (provider === "google" && new Set(explains).size < 2) {
+      throw new CheckFailure(`${label}: คำอธิบายของทุกสถานการณ์เหมือนกันหมด ต้องแยกตามชนิด error`);
     }
   },
 });
 
-const exercise2 = (label: string, expected: [string, string]): FileCheck => ({
+const exercise2 = (label: string, expected: string[]): FileCheck => ({
   check: (run) => {
     common(run, label);
     const out = norm(run.stdout);
-    for (const n of [1, 2]) {
-      const value = field(scenarioText(out, n, 2, label), "ควรลองใหม่", `${label} (สถานการณ์ ${n})`);
+    const last = expected.length;
+    for (let n = 1; n <= last; n++) {
+      const value = field(scenarioText(out, n, last, label), "ควรลองใหม่", `${label} (สถานการณ์ ${n})`);
       if (value !== expected[n - 1]) {
         throw new CheckFailure(`${label}: สถานการณ์ ${n} ต้องได้ "ควรลองใหม่: ${expected[n - 1]}" (ได้ "${value}")`);
       }
@@ -96,8 +110,8 @@ const exercise2 = (label: string, expected: [string, string]): FileCheck => ({
 export default {
   "example.ollama": exampleOllama("example.ollama"),
   "example.google": exampleGoogle("example.google"),
-  "exercise-1.ollama": exercise1("exercise-1.ollama"),
-  "exercise-1.google": exercise1("exercise-1.google"),
-  "exercise-2.ollama": exercise2("exercise-2.ollama", ["ใช่", "ไม่ใช่"]),
-  "exercise-2.google": exercise2("exercise-2.google", ["ไม่ใช่", "ไม่ใช่"]),
+  "exercise-1.ollama": exercise1("exercise-1.ollama", "ollama"),
+  "exercise-1.google": exercise1("exercise-1.google", "google"),
+  "exercise-2.ollama": exercise2("exercise-2.ollama", ["ใช่", "ไม่ใช่", "ใช่"]),
+  "exercise-2.google": exercise2("exercise-2.google", ["ไม่ใช่", "ไม่ใช่", "ใช่"]),
 } satisfies Record<string, FileCheck>;

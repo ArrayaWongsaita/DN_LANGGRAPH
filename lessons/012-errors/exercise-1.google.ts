@@ -1,7 +1,7 @@
 // แบบฝึกหัด 1: อธิบาย error เป็นภาษาไทย
 //
 // โจทย์: เติม explainError ให้รับ error แล้วคืนข้อความภาษาไทยสั้นๆ ที่บอกว่าเกิดอะไรขึ้นและต้องแก้อะไร
-// (แยกอย่างน้อย: ต่อ provider ไม่ได้ / ไม่พบโมเดล (404) / ที่เหลือ) ไฟล์จะทำให้เกิด error จริง 2 สถานการณ์ แล้วพิมพ์
+// (แยกอย่างน้อย: ต่อ provider ไม่ได้ / ไม่พบโมเดล (404) / ที่เหลือ) ไฟล์จะทำให้เกิด error จริง 2 สถานการณ์ และมีสถานการณ์ 3 เป็น error ปลอมที่มี status 429 (ไม่ยิงเน็ต) แล้วพิมพ์
 //   สถานการณ์ N: <ชื่อ>
 //     อธิบาย: <ข้อความของคุณ>
 //
@@ -56,4 +56,5 @@ export async function main(): Promise<void> {
 
   report(1, "ชื่อโมเดลผิด", await catchError(makeModel({ model: env("GOOGLE_MODEL") + "-not-real" })));
   report(2, "key ผิด", await catchError(makeModel({ apiKey: "wrong-key-for-lesson-012" })));
+  report(3, "error ปลอม (status_code 429)", Object.assign(new Error("fake"), { status_code: 429 }));
 }
