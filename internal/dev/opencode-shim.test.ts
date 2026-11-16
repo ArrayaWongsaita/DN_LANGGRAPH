@@ -42,24 +42,31 @@ describe("opencode shim", () => {
   });
   it("stream:false ส่งหัวไป upstream", async () => {
     seen = [];
-    const r = await (await post({ model: "x", stream: false, messages: [{ role: "user", content: "hi" }] })).json() as Record<string, unknown>;
+    const r = await (await post({ model: "fake-model", stream: false, messages: [{ role: "user", content: "hi" }] })).json() as Record<string, unknown>;
     expect(r).toMatchObject({ done: true, prompt_eval_count: 3, eval_count: 4, message: { content: "สวัสดี" } });
     expect(seen[0].headers.authorization).toBe(`Bearer ${KEY}`);
     expect(seen[0].headers["x-opencode-session"]).toBeTruthy();
     expect(seen[0].body.model).toBe("fake-model");
   });
   it("stream เป็นค่าเริ่มต้น (NDJSON)", async () => {
-    const text = await (await post({ model: "x", messages: [{ role: "user", content: "hi" }] })).text();
+    const text = await (await post({ model: "fake-model", messages: [{ role: "user", content: "hi" }] })).text();
     const lines = text.trim().split("\n").map((l) => JSON.parse(l) as Record<string, unknown>);
     expect(lines.at(-1)).toMatchObject({ done: true, eval_count: 4 });
     expect(lines[0]).toMatchObject({ done: false, message: { content: "สวัสดี" } });
   });
   it("upstream 400 ส่งต่อโดยไม่มี key", async () => {
-    const res = await post({ model: "x", stream: false, messages: [{ role: "user", content: "BAD" }] });
+    const res = await post({ model: "fake-model", stream: false, messages: [{ role: "user", content: "BAD" }] });
     expect(res.status).toBe(400);
     const text = await res.text();
     expect(text).not.toContain(KEY);
     expect(JSON.parse(text)).toHaveProperty("error");
+  });
+  it("ชื่อโมเดลไม่ตรงได้ 404 แบบ Ollama และไม่ยิง upstream", async () => {
+    seen = [];
+    const res = await post({ model: "fake-model-not-real", stream: false, messages: [{ role: "user", content: "hi" }] });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'model "fake-model-not-real" not found, try pulling it first' });
+    expect(seen).toHaveLength(0);
   });
   it("path อื่น 404", async () => {
     const res = await fetch(`${shim.baseUrl}/nope`);

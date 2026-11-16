@@ -3,7 +3,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { filesForProvider, opencodeDevConfig, providerEnv, runOnce } from "./runner";
 import type { Lesson } from "./types";
@@ -18,6 +18,9 @@ beforeAll(() => {
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}');
   fs.writeFileSync(path.join(dir, "echo.ts"),
     'import readline from "node:readline";\nconst rl = readline.createInterface({ input: process.stdin });\nfor await (const line of rl) { console.log(`ได้รับ: ${line}`); break; }\n');
+  fs.writeFileSync(path.join(dir, "chat-input.ts"),
+    'import { ask } from ' + JSON.stringify(pathToFileURL(path.join(root, "src", "lib", "ask.ts")).href) +
+    ';\nwhile (true) {\n  const line = await ask("> ");\n  if (line === null || line === "จบ") break;\n  console.log(`ได้: ${line}`);\n}\n');
   fs.writeFileSync(path.join(dir, "hang.ts"), "setInterval(() => undefined, 1000);\n");
   fs.writeFileSync(path.join(dir, "chat.ts"),
     'const r = await fetch(`${process.env.OLLAMA_BASE_URL}/api/chat`, { method: "POST", body: "{}" });\nconsole.log(JSON.stringify(await r.json()));\n');
@@ -61,6 +64,13 @@ describe("runOnce", () => {
     expect(r.stdout).toContain("ได้รับ: สวัสดี");
     expect(r.exitCode).toBe(0);
     expect(r.timedOut).toBe(false);
+  }, 30000);
+  it("input ส่งผ่าน ask() ได้ครบทุกบรรทัด", async () => {
+    const r = await runOnce({ root, lesson, file: "chat-input", provider: "google", attempt: 1, check: { input: ["ก", "ข", "จบ", "ค"], check: noop }, env: {} });
+    expect(r.stdout).toContain("ได้: ก");
+    expect(r.stdout).toContain("ได้: ข");
+    expect(r.stdout).not.toContain("ได้: ค");
+    expect(r.exitCode).toBe(0);
   }, 30000);
   it("ตัดเมื่อเกินเวลา", async () => {
     const r = await runOnce({ root, lesson, file: "hang", provider: "google", attempt: 1, check: { timeoutMs: 500, check: noop }, env: {} });

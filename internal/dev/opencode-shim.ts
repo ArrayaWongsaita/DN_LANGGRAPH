@@ -39,6 +39,9 @@ export function startShim(opts: { apiKey: string; model: string; upstreamUrl?: s
           let parsed: OllamaChatRequest;
           try { parsed = JSON.parse(await readBody(req)) as OllamaChatRequest; }
           catch { return sendJson(res, 400, { error: "invalid JSON body" }); }
+          if (parsed.model !== model) {
+            return sendJson(res, 404, { error: `model "${parsed.model}" not found, try pulling it first` });
+          }
           const upstream = await fetch(upstreamUrl, {
             method: "POST",
             headers: {
@@ -53,9 +56,9 @@ export function startShim(opts: { apiKey: string; model: string; upstreamUrl?: s
             return sendJson(res, upstream.status, { error: scrub(`upstream ${upstream.status}: ${text.slice(0, 500)}`) });
           }
           const json: unknown = JSON.parse(text);
-          if (parsed.stream === false) return sendJson(res, 200, toOllamaResponse(json, model));
+          if (parsed.stream === false) return sendJson(res, 200, toOllamaResponse(json, model, { think: parsed.think }));
           res.writeHead(200, { "content-type": "application/x-ndjson" });
-          for (const line of toOllamaStreamChunks(json, model)) res.write(line);
+          for (const line of toOllamaStreamChunks(json, model, { think: parsed.think })) res.write(line);
           return res.end();
         }
         return sendJson(res, 404, { error: `not found: ${path}` });

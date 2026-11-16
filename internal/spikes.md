@@ -68,6 +68,7 @@
   3. `InMemoryCache` + `cachePolicy`: state ที่เป็น messages ต้องใช้ `keyFunc`
   4. hosting: ตัดสินจากเอกสารเท่านั้น ยังไม่ได้ deploy
 - **ข้อที่ผลขึ้นกับโมเดล ทดสอบกับ `deepseek-v4.1-flash` ผ่าน opencode shim เท่านั้น ยังไม่ใช่ provider จริง:** usage hook (Step 2), langgraph-cli dev ที่รัน graph ผ่านโมเดล, `useStream` ทั้ง 2 ทาง, Agent Chat UI, `bindTools` กับ tool จาก MCP, `maxConcurrency` แบบเรียกโมเดล, cache, agentevals (`createAgent` และ LLM judge) · shim แปลง `/api/chat` ของ Ollama เป็น OpenAI chat completions และส่งผลแบบไม่ stream แล้วแตกเป็น NDJSON 2 chunk · พฤติกรรมของ tool call, structured output, streaming และตัวเลข token กับ Google / Ollama Cloud / Ollama ในเครื่องอาจต่างไป ต้องยืนยันใน 6b และตอนรัน `pnpm verify` กับ provider จริง
+- **shim เลียนของจริงได้แค่ไหน:** (1) stream เป็นของปลอม shim ขอผลแบบไม่ stream จาก upstream แล้วแตกเป็นชิ้นละ 12 grapheme ระยะเวลาระหว่างชิ้นจึงไม่ใช่ของจริง (2) `think: false` ถูกแปลงเป็น `thinking: {type:"disabled"}` ซึ่งใช้ได้กับ deepseek เท่านั้น (3) ชื่อโมเดลที่ไม่ตรงกับ `OPENCODE_DEV_MODEL` ได้ 404 แบบ Ollama (4) ไม่มี 429 และไม่มีลิมิต concurrency จริง
 
 ## ทำแล้ว (6a)
 
@@ -417,3 +418,15 @@
   - `pnpm verify 001-006 --provider ollama`
 - ผลที่คาดหวัง: ✅ ทุกรอบ · บท 001, 003, 004, 005 ขึ้น `– ไม่มีไฟล์ให้รัน` · **จดยอด token รวมของแต่ละ provider** (ขาเข้า/ขาออก) ต่อท้ายหัวข้อ "ผล 6b"
 - ถ้ารอบไหนไม่ผ่าน ให้ดูว่าแก้ที่โค้ดบทหรือที่เกณฑ์ (เกณฑ์ตรวจโครง ไม่ตรวจถ้อยคำ) แก้บน `main` ก่อน แล้ว `git -C ../LANGGRAPH-solutions merge main` · ถ้าเฉลย `.google.ts` ผิด ให้แก้บน `solutions` โดยตรง
+
+
+### 6b-11: บท 007–016 กับ provider จริง (แผน 2 ตรวจได้แค่ opencode-dev)
+
+- [ ] main: `pnpm verify 007-016 --provider google --examples-only --repeat 3` · `--provider ollama-cloud --examples-only --repeat 3` · `--provider ollama --examples-only`
+- [ ] solutions (`../LANGGRAPH-solutions`): `pnpm verify 007-016 --provider google --repeat 3` · `--provider ollama-cloud --repeat 3` · `--provider ollama`
+- [ ] รันผ่านแล้วลบหมายเหตุ ".google.ts ยังไม่ได้ทดสอบ" ใน README 007–016 และคอมเมนต์หมายเหตุในเฉลย `.google.ts`
+- [ ] `grep -rn "TODO(6b)" lessons` ไม่เหลือ
+- เรื่องที่ต้องดูเป็นรายบท:
+  - 007: `ChatGoogle` คืน `content` เป็น array หรือ string · usage hook นับ token ของ `ChatGoogle` ได้ (ผ่าน `fetch(Request)`) · `model.model` ของ `ChatGoogle` คืนชื่อเดียวกับ `GOOGLE_MODEL`
+  - 008: `ChatGoogle` เก็บเหตุที่หยุดไว้ที่ `finish_reason` หรือ `finishReason` (example.google.ts อ่านทั้งสองชื่อและ throw ถ้าไม่มี) และค่าจริงคืออะไร · `usage_metadata.output_tokens` ของ Gemini รวม thinking หรือไม่ เทียบกับ usage hook · `contentBlocks` ของ Gemini
+  - 009: Gemini รับ `{ role: "system" }` และ few-shot ที่มี ai message

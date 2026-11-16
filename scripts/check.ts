@@ -1,5 +1,6 @@
 import path from "node:path";
 import {
+  checkLessonFileNames,
   checkLessonFolders,
   checkNoHardcodedModels,
   checkNoSecrets,
@@ -14,6 +15,7 @@ const root = path.resolve(import.meta.dirname, "..");
 
 const problems: Problem[] = [
   ...checkLessonFolders(root),
+  ...checkLessonFileNames(root),
   ...checkReadmeHeadings(root),
   ...checkProviderPairs(root),
   ...checkNoHardcodedModels(root),

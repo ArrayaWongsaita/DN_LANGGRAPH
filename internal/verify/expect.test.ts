@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CheckFailure, expectIncludes, expectMatches, expectNotIncludes, expectSuccess, expectThai, extractAfter, extractRounds } from "./expect";
+import { CheckFailure, expectIncludes, expectMatches, expectNotIncludes, expectSuccess, expectNoSecrets, expectThai, extractAfter, extractRounds, extractSection } from "./expect";
 import type { RunResult } from "./types";
 
 function fakeRun(over: Partial<RunResult> = {}): RunResult {
@@ -62,4 +62,33 @@ describe("extractAfter / extractRounds", () => {
     ]);
   });
   it("extractRounds ไม่เจอ คืนอาร์เรย์ว่าง", () => expect(extractRounds("ไม่มี")).toEqual([]));
+});
+
+describe("expectNoSecrets / extractSection", () => {
+  it("throw เมื่อค่า key อยู่ใน stderr และไม่แสดงค่า", () => {
+    const secret = "FAKEKEY" + "abc123";
+    try {
+      expectNoSecrets(fakeRun({ env: { GOOGLE_API_KEY: secret }, stderr: `x ${secret} y` }), "x");
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(CheckFailure);
+      expect((e as Error).message).not.toContain(secret);
+    }
+  });
+  it("throw เมื่อค่า OPENCODE_API_KEY อยู่ใน stdout", () => {
+    const secret = "FAKEKEY" + "xyz789";
+    expect(() => expectNoSecrets(fakeRun({ env: { OPENCODE_API_KEY: secret }, stdout: secret }), "x")).toThrow(CheckFailure);
+  });
+  it("ไม่ throw เมื่อค่าเป็นสตริงว่าง", () => {
+    expectNoSecrets(fakeRun({ env: { GOOGLE_API_KEY: "" }, stdout: "abc", stderr: "abc" }), "x");
+  });
+  it("extractSection", () => {
+    const t = "ก\n--- 1 ---\nข\n--- 2 ---\nค";
+    expect(extractSection(t, "--- 1 ---", "--- 2 ---", "x")).toBe("ข");
+    expect(extractSection(t, "--- 1 ---", null, "x")).toBe("ข\n--- 2 ---\nค");
+  });
+  it("extractSection ไม่พบ start หรือ end", () => {
+    expect(() => extractSection("abc", "zz", null, "x")).toThrow(/^x:/);
+    expect(() => extractSection("a --- 1 ---", "--- 1 ---", "--- 2 ---", "x")).toThrow(/^x:/);
+  });
 });

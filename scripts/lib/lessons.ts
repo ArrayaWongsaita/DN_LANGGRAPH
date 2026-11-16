@@ -28,13 +28,38 @@ export function findLesson(lessonsDir: string, input: string): Lesson | null {
   return listLessons(lessonsDir).find((l) => l.number === number) ?? null;
 }
 
-// ชื่อไฟล์ที่รันได้ (ไม่มี .ts) เรียงตามตัวอักษร
+export const RUNNABLE_RE = /^(example|exercise-\d+)(\.(ollama|google))?$/;
+
+// ชื่อไฟล์ที่รันได้ (ไม่มี .ts) ตรง RUNNABLE_RE เรียงตามตัวอักษร
 export function runnableFiles(lesson: Lesson): string[] {
   return fs
     .readdirSync(lesson.dir, { withFileTypes: true })
     .filter((e) => e.isFile() && e.name.endsWith(".ts") && !e.name.endsWith(".test.ts"))
     .map((e) => e.name.slice(0, -3))
+    .filter((n) => RUNNABLE_RE.test(n))
     .sort();
+}
+
+// เลขบท → ชื่อโฟลเดอร์ (เฉพาะเลขที่มี 2 โฟลเดอร์ขึ้นไป)
+export function duplicateNumbers(lessons: Lesson[]): Map<string, string[]> {
+  const by = new Map<string, string[]>();
+  for (const l of lessons) by.set(l.number, [...(by.get(l.number) ?? []), path.basename(l.dir)]);
+  const dup = new Map<string, string[]>();
+  for (const [n, names] of by) if (names.length > 1) dup.set(n, names.sort());
+  return dup;
+}
+
+export type Located = { ok: true; lesson: Lesson } | { ok: false; message: string };
+
+export function locateLesson(lessonsDir: string, input: string): Located {
+  const number = normalizeLessonNumber(input);
+  const all = number === null ? [] : listLessons(lessonsDir).filter((l) => l.number === number);
+  if (number === null || all.length === 0) return { ok: false, message: `ไม่พบบท ${input} ในโฟลเดอร์ lessons/` };
+  if (all.length > 1) {
+    const names = all.map((l) => path.basename(l.dir)).sort();
+    return { ok: false, message: `บท ${number} มีหลายโฟลเดอร์: ${names.join(", ")} ให้เหลือโฟลเดอร์เดียว` };
+  }
+  return { ok: true, lesson: all[0] };
 }
 
 export type Resolved = { ok: true; file: string } | { ok: false; message: string };
