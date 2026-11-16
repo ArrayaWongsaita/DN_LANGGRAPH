@@ -1,16 +1,13 @@
-// แบบฝึกหัด 2: เลือก maxConcurrency เอง
+// เฉลยแบบฝึกหัด 2: เลือก maxConcurrency เอง
 //
 // โจทย์: เติม pickConcurrency() ให้คืนเลข 1, 2 หรือ 3 ที่คุณเลือกเป็น maxConcurrency โดยมีเหตุผลตามที่อ่านใน README (หัวข้อเลือก maxConcurrency)
 // แล้วไฟล์จะ batch 6 คำถามด้วยเลขที่เลือก พร้อม tracker ที่นับงานพร้อมกัน และพิมพ์
 //   maxConcurrency: K
 //   งานพร้อมกันสูงสุด: N
 //   ได้คำตอบ: 6 ข้อ
-//
-// แนวทาง:
-// 1. อ่านข้อดีข้อเสียของเลขต่ำและเลขสูงใน README ก่อน แล้วเลือกเลขเดียว ทุกตัวเลือก 1-3 ใช้ได้ ผลที่เห็นต่างกันที่ N และเวลารัน
-// 2. ลองรันซ้ำโดยเปลี่ยนเลข แล้วดูว่า N เปลี่ยนตามหรือไม่
-// 3. จุด 👉: คืนเลขที่เลือก ตอนนี้ pickConcurrency คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 014 exercise-2.google
+// รัน: pnpm lesson 014 exercise-2.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
+
 import { ChatGoogle } from "@langchain/google";
 import { env } from "../../src/lib/env";
 
@@ -25,18 +22,17 @@ const QUESTIONS = [
 
 const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_API_KEY") });
 
-function pickConcurrency(): number | undefined {
-  // 👉 คืนเลข 1, 2 หรือ 3 ที่คุณเลือก (แทนบรรทัด return undefined)
-  return undefined;
+function pickConcurrency(): number {
+  // เฉลยจุดที่ 1: เลือก 2 เพราะเป็นจุดสมดุล
+  // - 1 ปลอดภัยที่สุดแต่ช้า เท่ากับถามทีละข้อ ไม่ได้ประโยชน์จาก batch
+  // - 3 เร็วกว่า แต่ยิงพร้อมกันมากขึ้นก็ยิ่งเสี่ยงชนลิมิตของ provider (429) โดยเฉพาะแผนฟรี
+  // - 2 เร็วขึ้นประมาณเท่าตัวเมื่อเทียบกับ 1 แต่ยังเหลือที่ว่างจากลิมิต และตรงกับค่าที่ใช้ในตัวอย่างของบท
+  // (ผลของเลขอื่นต่างกันที่ "งานพร้อมกันสูงสุด" และเวลารัน ไม่ต่างที่จำนวนคำตอบ)
+  return 2;
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ยังไม่ได้เลือกเลข (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
   const concurrency = pickConcurrency();
-  if (concurrency === undefined) {
-    console.log("👉 ยังไม่ได้เติม pickConcurrency (ดูบรรทัดที่มี 👉)");
-    return;
-  }
 
   // tracker ฟังเหตุการณ์ของโมเดล: เริ่มเรียก (+1) จบ (-1) หรือล้ม (-1) แล้วจดค่าสูงสุดที่เคยเห็น
   let active = 0;

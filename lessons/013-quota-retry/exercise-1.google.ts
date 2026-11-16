@@ -1,4 +1,4 @@
-// แบบฝึกหัด 1: คำนวณเวลารอก่อนลองใหม่ (exponential backoff แบบมีเพดาน)
+// เฉลยแบบฝึกหัด 1: คำนวณเวลารอก่อนลองใหม่ (exponential backoff แบบมีเพดาน)
 //
 // โจทย์: เติม backoffMs(attempt) ให้คืนจำนวนมิลลิวินาทีที่ต้องรอ "ก่อนลองครั้งที่ attempt"
 //   ครั้งที่ 2 รอ 500 ms, ครั้งที่ 3 รอ 1000 ms, ครั้งที่ 4 รอ 2000 ms ... เท่าตัวไปเรื่อยๆ แต่ไม่เกิน 4000 ms
@@ -8,12 +8,9 @@
 //   ครั้งที่ 1: ล้มเหลว (TimeoutError) รอ 500 ms
 //   ครั้งที่ 2: สำเร็จ
 //   คำตอบ: ...
-//
-// แนวทาง:
-// 1. คิดทีละเรื่อง: ครั้งที่ต่ำกว่า 2 คืนอะไร, ครั้งที่ 2 เป็นฐานเท่าไร (2 ยกกำลังเท่าไรจึงได้ฐานพอดี), และเพดาน 4000 ใส่ตรงไหน
-// 2. ใน JavaScript ยกกำลังเขียน 2 ** k และหาค่าน้อยกว่าของสองค่าใช้ Math.min
-// 3. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ backoffMs คืน undefined เสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 4. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 013 exercise-1.google
+// รัน: pnpm lesson 013 exercise-1.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
+
 import { ChatGoogle } from "@langchain/google";
 import { env } from "../../src/lib/env";
 
@@ -31,9 +28,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 function backoffMs(attempt: number): number | undefined {
-  void attempt; // บรรทัดนี้กัน lint เตือนว่าตัวแปร attempt ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ attempt
-  // 👉 คืนเวลารอก่อนลองครั้งที่ attempt (ครั้งที่ต่ำกว่า 2 คืน undefined) แทนบรรทัด return undefined
-  return undefined;
+  // เฉลยจุดที่ 1: ครั้งแรก (attempt 1) ไม่ต้องรอ จึงคืน undefined เพื่อให้ผู้เรียกแยกได้ว่า "ไม่มีการรอ" ต่างจากรอ 0 ms
+  if (attempt < 2) return undefined;
+  // ครั้งที่ 2 ได้ 500 ms (ฐาน) แล้วเท่าตัวทุกครั้ง: 500 * 2 ** (attempt - 2) จึงเป็น 500, 1000, 2000, 4000, 8000 ...
+  // Math.min ตัดเพดานที่ 4000 ms กันรอนานเกินไปเมื่อลองหลายรอบ (เพดานยังกันตัวเลขโตไม่หยุดด้วย)
+  return Math.min(500 * 2 ** (attempt - 2), 4000);
 }
 
 // loop ลองใหม่ (เขียนไว้ให้แล้ว): ล้มแล้วถาม backoffMs ว่าต้องรอเท่าไรก่อนครั้งถัดไป
@@ -57,17 +56,6 @@ async function askWithBackoff(q: string): Promise<string> {
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ backoffMs ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  if (backoffMs(2) === undefined) {
-    console.log("👉 ยังไม่ได้เติม backoffMs (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-  // ครั้งที่ 1 เป็นครั้งแรก ไม่มีการรอ backoffMs(1) ต้องคืน undefined
-  if (backoffMs(1) !== undefined) {
-    console.log("👉 backoffMs(1) ต้องคืน undefined เพราะครั้งแรกไม่ต้องรอ (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   for (let n = 2; n <= 6; n++) {
     console.log(`รอก่อนลองครั้งที่ ${n}: ${backoffMs(n)} ms`);
   }

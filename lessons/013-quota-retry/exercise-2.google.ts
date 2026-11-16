@@ -1,16 +1,12 @@
-// แบบฝึกหัด 2: รวมยอด token ที่ใช้ไปหลายคำถาม
+// เฉลยแบบฝึกหัด 2: รวมยอด token ที่ใช้ไปหลายคำถาม
 //
 // โจทย์: เติม addUsage(total, msg) ให้คืนยอดรวมใหม่ = total บวกกับ token ของ msg (ขาเข้า ขาออก และรวม)
 // แล้วไฟล์จะถามโมเดล 3 คำถามต่อกัน พิมพ์ token ของแต่ละข้อ และยอดรวมทั้งหมด
 //   ข้อ i: ขาเข้า N ขาออก M
 //   รวมทั้งหมด: ขาเข้า N ขาออก M รวม T
-//
-// แนวทาง:
-// 1. token ของคำตอบหนึ่งอยู่ที่ msg.usage_metadata มี 3 ฟิลด์ input_tokens, output_tokens, total_tokens (ดูบท 008)
-// 2. usage_metadata อาจเป็น undefined (บางครั้งไม่มี) ถ้าไม่มีให้ถือว่าไม่เพิ่ม
-// 3. ฟังก์ชันนี้ไม่ควรแก้ค่าใน total ที่รับเข้ามา ให้คืนก้อนใหม่
-// 4. จุด 👉: เขียนตัวฟังก์ชัน ตอนนี้ addUsage คืน total เดิมเสมอ (ไฟล์จึงหยุดแล้วพิมพ์ 👉 ก่อนเรียกโมเดล)
-// 5. ลบ 👉 ออกเมื่อเสร็จ แล้วรัน: pnpm lesson 013 exercise-2.google
+// รัน: pnpm lesson 013 exercise-2.google
+// หมายเหตุ: ไฟล์ .google.ts ของเฉลยยังไม่เคยรันกับ Gemini จริง (เขียนตามรูปแบบใน example.google.ts)
+
 import { AIMessage, type UsageMetadata } from "@langchain/core/messages";
 import { ChatGoogle } from "@langchain/google";
 import { env } from "../../src/lib/env";
@@ -26,22 +22,18 @@ const model = new ChatGoogle({ model: env("GOOGLE_MODEL"), apiKey: env("GOOGLE_A
 const ZERO: UsageMetadata = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
 
 function addUsage(total: UsageMetadata, msg: AIMessage): UsageMetadata {
-  void msg; // บรรทัดนี้กัน lint เตือนว่าตัวแปร msg ยังไม่ได้ใช้ ลบทิ้งเมื่อเริ่มใช้ msg
-  // 👉 คืนยอดรวมใหม่ที่บวก token ของ msg เข้าไปแล้ว (แทนบรรทัด return total)
-  return total;
+  // เฉลยจุดที่ 1: usage_metadata อาจเป็น undefined (บางครั้ง provider ไม่ส่งมา) ถ้าไม่มีถือว่าไม่เพิ่ม
+  // คืนก้อนใหม่เสมอเพื่อไม่แก้ total เดิมของผู้เรียก (ไม่มี side effect จึงทดสอบและต่อยอดง่าย)
+  const usage = msg.usage_metadata;
+  if (usage === undefined) return { ...total };
+  return {
+    input_tokens: total.input_tokens + usage.input_tokens,
+    output_tokens: total.output_tokens + usage.output_tokens,
+    total_tokens: total.total_tokens + usage.total_tokens,
+  };
 }
 
 export async function main(): Promise<void> {
-  // บล็อกนี้กันไม่ให้เรียกโมเดลทั้งที่ addUsage ยังไม่ทำงาน (ไม่เสีย token) ลบทิ้งได้เมื่อเติมเสร็จ
-  const sample = new AIMessage({
-    content: "ตัวอย่าง",
-    usage_metadata: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
-  });
-  if (addUsage(ZERO, sample).total_tokens === 0) {
-    console.log("👉 ยังไม่ได้เติม addUsage (ดูบรรทัดที่มี 👉)");
-    return;
-  }
-
   let total = ZERO;
   for (const [i, q] of QUESTIONS.entries()) {
     const res = await model.invoke(q);
