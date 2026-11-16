@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { countPointers, findLesson, pointerWarning, listLessons, normalizeLessonNumber, resolveLessonFile, runnableFiles } from "./lessons";
+import { countPointers, duplicateNumbers, findLesson, locateLesson, pointerWarning, listLessons, normalizeLessonNumber, resolveLessonFile, runnableFiles } from "./lessons";
 
 let dir: string;
 beforeAll(() => {
@@ -15,6 +15,9 @@ beforeAll(() => {
   make("002-setup-project", ["example.ts", "exercise-1.ts"]);
   make("009-empty", ["README.md"]);
   make("appendix-a-more-providers", []);
+  make("007-a", ["example.ts"]);
+  make("007-b", ["example.ts"]);
+  make("008-c", ["example.ts", "exercise-12.google.ts", "helper.ts", "route.ts", "exercise1.ts", "example.test.ts"]);
   fs.writeFileSync(path.join(dir, "notes.md"), "");
 });
 afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -27,7 +30,7 @@ describe("lessons", () => {
     for (const bad of ["0", "000", "abc", "1000", "", "6a"]) expect(normalizeLessonNumber(bad)).toBeNull();
   });
   it("listLessons เอาเฉพาะโฟลเดอร์ NNN-slug เรียงตามเลข", () =>
-    expect(listLessons(dir).map((l) => l.number)).toEqual(["002", "006", "009"]));
+    expect(listLessons(dir).map((l) => l.number)).toEqual(["002", "006", "007", "007", "008", "009"]));
   it("ไม่มีโฟลเดอร์ lessons → []", () => expect(listLessons(path.join(dir, "ไม่มี"))).toEqual([]));
   it("findLesson รับ 6", () => expect(findLesson(dir, "6")?.slug).toBe("raw-fetch"));
   it("runnableFiles ไม่เอา README และ .test.ts", () =>
@@ -52,6 +55,16 @@ describe("lessons", () => {
   it("ไม่มีไฟล์ให้รัน", () => {
     const r = resolveLessonFile(findLesson(dir, "009")!);
     expect(r).toEqual({ ok: false, message: "บท 009 ไม่มีไฟล์ให้รัน อ่าน README.md ของบทนี้" });
+  });
+  it("runnableFiles เหลือเฉพาะชื่อที่ตรง RUNNABLE_RE", () =>
+    expect(runnableFiles(listLessons(dir).find((l) => l.number === "008")!)).toEqual(["example", "exercise-12.google"]));
+  it("duplicateNumbers", () =>
+    expect(duplicateNumbers(listLessons(dir))).toEqual(new Map([["007", ["007-a", "007-b"]]])));
+  it("locateLesson", () => {
+    expect(locateLesson(dir, "7")).toEqual({ ok: false, message: "บท 007 มีหลายโฟลเดอร์: 007-a, 007-b ให้เหลือโฟลเดอร์เดียว" });
+    expect(locateLesson(dir, "999")).toEqual({ ok: false, message: "ไม่พบบท 999 ในโฟลเดอร์ lessons/" });
+    const r = locateLesson(dir, "8");
+    expect(r.ok && r.lesson.number).toBe("008");
   });
   it("pointerWarning", () => expect(pointerWarning(3)).toBe("⚠️  ไฟล์นี้ยังมี 👉 อีก 3 จุด ผลที่ได้อาจยังไม่ครบ"));
 });

@@ -3,7 +3,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  EXERCISE_GUARD_FROM,
+  PROVIDER_PAIRS_FROM,
+  PROVIDER_PAIRS_TO,
   README_HEADINGS,
+  STUDIO_FROM,
+  checkLessonFileNames,
   checkLessonFolders,
   checkNoHardcodedModels,
   checkNoSecrets,
@@ -82,6 +87,19 @@ describe("course rules", () => {
 
   it("เลขบทขาด", () =>
     expect(checkLessonFolders(rootWith(["001-a", "003-c"]))).toContainEqual(expect.objectContaining({ message: "เลขบทขาด: ไม่มีบท 002" })));
+  it("เลขบทซ้ำ", () =>
+    expect(checkLessonFolders(rootWith(["001-x", "002-x", "003-x", "004-x", "005-x", "006-x", "007-a", "007-b"]))).toContainEqual(
+      expect.objectContaining({ file: "lessons", message: "เลขบทซ้ำ: 007-a, 007-b" }),
+    ));
+  it("checkLessonFileNames จับชื่อที่ไม่ตรงรูปแบบ", () => {
+    const root = rootWithFiles("008-a", ["exercise1.ts", "example-ollama.ts", "exercise-1.Ollama.ts", "helper.ts", "example.test.ts", "exercise-1.ts"]);
+    expect(checkLessonFileNames(root).map((p) => path.basename(p.file)).sort()).toEqual(["example-ollama.ts", "exercise-1.Ollama.ts", "exercise1.ts"]);
+    expect(checkLessonFileNames(root)[0].message).toBe("ชื่อไฟล์ไม่ตรงรูปแบบ example / exercise-N (.ollama|.google) จึงจะไม่ถูกรัน");
+  });
+  it("checkProviderPairs ไม่ฟ้อง helper.ts", () => expect(checkProviderPairs(rootWithFiles("008-a", ["helper.ts"]))).toEqual([]));
+  it("ค่าคงที่เป็น string 3 หลัก", () => {
+    for (const c of [STUDIO_FROM, PROVIDER_PAIRS_FROM, PROVIDER_PAIRS_TO, EXERCISE_GUARD_FROM]) expect(c).toMatch(/^\d{3}$/);
+  });
   it("ชื่อโฟลเดอร์ผิด", () => expect(checkLessonFolders(rootWith(["001-a", "2-b"]))).toHaveLength(1));
   it("ภาคผนวกชื่อถูกรูปแบบ ไม่นับเป็นเลขบท", () =>
     expect(checkLessonFolders(rootWith(["001-a", "appendix-a-more-providers"]))).toEqual([]));

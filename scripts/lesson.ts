@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { countPointers, findLesson, pointerWarning, resolveLessonFile } from "./lib/lessons";
+import { countPointers, locateLesson, pointerWarning, resolveLessonFile } from "./lib/lessons";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const [input, name] = process.argv.slice(2);
@@ -11,12 +11,12 @@ if (!input) {
   console.error("ใช้งาน: pnpm lesson NNN [ชื่อไฟล์]");
   process.exit(1);
 }
-const lesson = findLesson(path.join(root, "lessons"), input);
-if (!lesson) {
-  console.error(`ไม่พบบท ${input} ในโฟลเดอร์ lessons/`);
+const located = locateLesson(path.join(root, "lessons"), input);
+if (!located.ok) {
+  console.error(located.message);
   process.exit(1);
 }
-const resolved = resolveLessonFile(lesson, name);
+const resolved = resolveLessonFile(located.lesson, name);
 if (!resolved.ok) {
   console.error(resolved.message);
   process.exit(1);

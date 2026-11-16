@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { listLessons, runnableFiles, type Lesson } from "./lessons";
+import { RUNNABLE_RE, duplicateNumbers, listLessons, runnableFiles, type Lesson } from "./lessons";
 
 export interface Problem { file: string; line?: number; message: string } // file is relative to root
 
@@ -17,7 +17,10 @@ export const README_HEADINGS: readonly string[] = [
 ];
 
 const STUDIO_HEADING = "เปิดดูใน Studio";
-const STUDIO_FROM = 46;
+export const STUDIO_FROM = "046";
+export const PROVIDER_PAIRS_FROM = "006";
+export const PROVIDER_PAIRS_TO = "027";
+export const EXERCISE_GUARD_FROM = "007";
 const FOLDER_RE = /^\d{3}-[a-z0-9]+(-[a-z0-9]+)*$/;
 const APPENDIX_RE = /^appendix-[a-c]-[a-z0-9]+(-[a-z0-9]+)*$/;
 // Wrong Thai sara am (nikhahit U+0E4D + sara aa U+0E32), built from char codes so this file does not trip its own rule
@@ -43,6 +46,9 @@ export function checkLessonFolders(root: string): Problem[] {
     if (FOLDER_RE.test(name)) numbers.add(Number(name.slice(0, 3)));
     else if (!APPENDIX_RE.test(name)) problems.push({ file, message: "ชื่อโฟลเดอร์ไม่ถูกรูปแบบ NNN-slug" });
   }
+  for (const [, names] of duplicateNumbers(lessons(root))) {
+    problems.push({ file: "lessons", message: `เลขบทซ้ำ: ${names.join(", ")}` });
+  }
   const max = Math.max(0, ...numbers);
   for (let n = 1; n <= max; n++) {
     if (!numbers.has(n)) problems.push({ file: "lessons", message: `เลขบทขาด: ไม่มีบท ${String(n).padStart(3, "0")}` });
@@ -60,7 +66,7 @@ export function checkReadmeHeadings(root: string): Problem[] {
       continue;
     }
     const found = fs.readFileSync(readme, "utf8").split(/\r?\n/).filter((l) => l.startsWith("## ")).map((l) => l.slice(3).trim());
-    const needStudio = Number(lesson.number) >= STUDIO_FROM;
+    const needStudio = Number(lesson.number) >= Number(STUDIO_FROM);
     const required = README_HEADINGS.filter((h) => needStudio || h !== STUDIO_HEADING);
     let ok = true;
     for (const h of required) {
@@ -82,7 +88,7 @@ export function checkProviderPairs(root: string): Problem[] {
   const problems: Problem[] = [];
   for (const lesson of lessons(root)) {
     const n = Number(lesson.number);
-    if (n < 6 || n > 27) continue;
+    if (n < Number(PROVIDER_PAIRS_FROM) || n > Number(PROVIDER_PAIRS_TO)) continue;
     const names = runnableFiles(lesson);
     for (const name of names) {
       const file = rel(root, path.join(lesson.dir, `${name}.ts`));
@@ -93,6 +99,19 @@ export function checkProviderPairs(root: string): Problem[] {
       }
       const other = `${m[1]}.${m[2] === "ollama" ? "google" : "ollama"}`;
       if (!names.includes(other)) problems.push({ file, message: `ขาดไฟล์คู่ ${other}.ts` });
+    }
+  }
+  return problems;
+}
+
+export function checkLessonFileNames(root: string): Problem[] {
+  const problems: Problem[] = [];
+  for (const lesson of lessons(root)) {
+    for (const e of fs.readdirSync(lesson.dir, { withFileTypes: true })) {
+      if (!e.isFile() || !e.name.endsWith(".ts") || e.name.endsWith(".test.ts")) continue;
+      if (!/^(example|exercise)/.test(e.name)) continue;
+      if (RUNNABLE_RE.test(e.name.slice(0, -3))) continue;
+      problems.push({ file: rel(root, path.join(lesson.dir, e.name)), message: "ชื่อไฟล์ไม่ตรงรูปแบบ example / exercise-N (.ollama|.google) จึงจะไม่ถูกรัน" });
     }
   }
   return problems;
