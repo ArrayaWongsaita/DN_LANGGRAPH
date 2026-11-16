@@ -167,9 +167,18 @@ const example = (label: string): FileCheck => ({
       if (!lines.some((l) => l.startsWith("คำตอบดิบ: "))) throw new CheckFailure(`${label} (คำถามที่ ${q.n}): ไม่มีบรรทัด คำตอบดิบ:`);
       const hasPass = lines.some((l) => l.startsWith("zod: ผ่าน "));
       const hasFail = lines.some((l) => l === "zod: ไม่ผ่าน");
-      if (hasPass === hasFail) throw new CheckFailure(`${label} (คำถามที่ ${q.n}): ต้องมี zod: ผ่าน หรือ zod: ไม่ผ่าน อย่างใดอย่างหนึ่ง`);
-      if (hasFail && lines.some((l) => l.startsWith("เจอสินค้า:"))) {
-        throw new CheckFailure(`${label} (คำถามที่ ${q.n}): zod ไม่ผ่านต้องไม่พิมพ์จำนวนสินค้า`);
+      // โมเดลตอบเป็นข้อความล้วน (failure mode ที่ออกแบบไว้): JSON.parse ทั้งตรงๆ และแบบแกะ {...} ไม่ผ่าน
+      // จึงไม่มีบรรทัด zod: เลย ถือเป็นข้อที่แปลงไม่สำเร็จ (ไม่ใช่ error) แต่ต้องพิมพ์ครบทั้งสองบรรทัด
+      const hasUnparseable =
+        lines.some((l) => l.startsWith("JSON.parse ตรงๆ: ไม่ผ่าน")) && lines.includes("แกะเอาเฉพาะ {...} แล้ว: ไม่ผ่าน");
+      const outcomes = [hasPass, hasFail, hasUnparseable].filter(Boolean).length;
+      if (outcomes !== 1) {
+        throw new CheckFailure(
+          `${label} (คำถามที่ ${q.n}): ต้องมี zod: ผ่าน, zod: ไม่ผ่าน หรือแปลง JSON ไม่ผ่านทั้งสองทาง อย่างใดอย่างหนึ่ง`,
+        );
+      }
+      if (!hasPass && lines.some((l) => l.startsWith("เจอสินค้า:"))) {
+        throw new CheckFailure(`${label} (คำถามที่ ${q.n}): ข้อที่ไม่ผ่าน zod ต้องไม่พิมพ์จำนวนสินค้า`);
       }
     }
     const pass = expectFilterCounts(step2, label);

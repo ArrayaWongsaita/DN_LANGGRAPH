@@ -65,6 +65,27 @@ const STEP2 = (x: number): string[] => [
 ];
 const EXAMPLE = [...STEP1, ...STEP2(2)].join("\n");
 
+// คำถามข้อ 3 ที่โมเดลตอบเป็นข้อความล้วน: JSON.parse ไม่ผ่านทั้งสองทาง จึงไม่มีบรรทัด zod: เลย
+const STEP2_PROSE = [
+  "--- ขั้นที่ 2: ขอ JSON จากโมเดลจริง ---",
+  `--- คำถามที่ 1: ${QUESTIONS[0]} ---`,
+  `คำตอบดิบ: ${Q1_FILTER}`,
+  "JSON.parse ตรงๆ: ผ่าน",
+  `zod: ผ่าน ${Q1_FILTER}`,
+  `เจอสินค้า: ${count(Q1_FILTER)} ชิ้น`,
+  `--- คำถามที่ 2: ${QUESTIONS[1]} ---`,
+  `คำตอบดิบ: ${Q2_FILTER}`,
+  "JSON.parse ตรงๆ: ผ่าน",
+  `zod: ผ่าน ${Q2_FILTER}`,
+  `เจอสินค้า: ${count(Q2_FILTER)} ชิ้น`,
+  `--- คำถามที่ 3: ${QUESTIONS[2]} ---`,
+  "คำตอบดิบ: ขออภัยครับ ผมขอตอบเป็นข้อความธรรมดา ไม่ได้ให้ JSON",
+  "JSON.parse ตรงๆ: ไม่ผ่าน (SyntaxError)",
+  "แกะเอาเฉพาะ {...} แล้ว: ไม่ผ่าน",
+  "สรุป: zod ผ่าน 2/3",
+];
+const EXAMPLE_PROSE = [...STEP1, ...STEP2_PROSE].join("\n");
+
 describe("เกณฑ์ตรวจบท 020 (example)", () => {
   const check = checks["example.ollama"].check;
   it("ผ่านเมื่อครบ ทั้งคู่ provider และรับ CRLF", () => {
@@ -93,6 +114,13 @@ describe("เกณฑ์ตรวจบท 020 (example)", () => {
       .replace(`zod: ผ่าน ${Q1_FILTER}\nเจอสินค้า: ${count(Q1_FILTER)} ชิ้น`, "zod: ไม่ผ่าน\n  ✖ ตัวเลือกไม่ถูกต้อง\n    → at category")
       .replace("สรุป: zod ผ่าน 2/3", "สรุป: zod ผ่าน 1/3");
     expect(() => check(run(onePass))).toThrow(/อย่างน้อย 2/);
+  });
+  it("ผ่านเมื่อข้อหนึ่งโมเดลตอบเป็นข้อความล้วน (JSON.parse ไม่ผ่านทั้งสองทาง จึงไม่มีบรรทัด zod:)", () => {
+    expect(() => check(run(EXAMPLE_PROSE))).not.toThrow();
+    expect(() => checks["example.google"].check(run(EXAMPLE_PROSE))).not.toThrow();
+    // ไม่Blanket: ถ้าไม่มีทั้งบรรทัด zod: และบรรทัดที่บอกว่าแปลง JSON ไม่ผ่าน ยังต้องล้ม
+    const silent = EXAMPLE_PROSE.replace("JSON.parse ตรงๆ: ไม่ผ่าน (SyntaxError)\nแกะเอาเฉพาะ {...} แล้ว: ไม่ผ่าน\n", "");
+    expect(() => check(run(silent))).toThrow(/อย่างใดอย่างหนึ่ง/);
   });
   it("ไม่ผ่านเมื่อไม่มีหัวข้อคำถามตามลำดับ หรือ exit code ไม่ใช่ 0", () => {
     expect(() => check(run(EXAMPLE.replace(`--- คำถามที่ 2: ${QUESTIONS[1]} ---`, "--- คำถามที่ 2 ---")))).toThrow();

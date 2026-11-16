@@ -53,7 +53,7 @@ export function oneLine(text: string, max: number): string {
 }
 
 // คำตอบดิบที่โมเดลส่งมา: ถ้าเป็น AIMessage ที่มี tool call ให้ดู args ตัวแรก ถ้าไม่มีให้ดูข้อความ
-// ใช้ได้ทั้งกรณีargs ไม่ผ่านและกรณีที่โมเดลตอบเป็นข้อความ ไม่ต้องเดา
+// ใช้ได้ทั้งกรณี args ไม่ผ่านและกรณีที่โมเดลตอบเป็นข้อความ ไม่ต้องเดา
 export function rawSummary(raw: BaseMessage): string {
   const call = AIMessage.isInstance(raw) ? raw.tool_calls?.[0] : undefined;
   return oneLine(call === undefined ? raw.text : JSON.stringify(call.args), 120);
