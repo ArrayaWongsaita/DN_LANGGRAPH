@@ -98,10 +98,12 @@
 | C | `format: "json"` + prompt ขอ JSON 5 ครั้ง | `JSON.parse` ตรงๆ ผ่าน 5/5 |
 | D | ไม่เปิด JSON mode + prompt เดียวกัน 5 ครั้ง | `JSON.parse` ตรงๆ ผ่าน 5/5 · code fence 0 ครั้ง (deepseek ตอบ JSON เปล่าเมื่อสั่งชัด ผู้เรียนที่ใช้โมเดลอื่นอาจเจอ fence จึงยังสอน `extractJson`) |
 | E | `withStructuredOutput(SearchFilter)` ค่าเริ่มต้น (jsonSchema) 2 ครั้ง | ใช้ได้ 2/2 ได้ object ถูกต้อง ไม่มี error |
+| F | `includeRaw: true` + schema ที่เข้มขึ้น (`summary` ยาวไม่เกิน 15 ตัวอักษร) กับ 6 ข้อความ `.batch` แล้วเรียก `invoke` ทีละข้อเทียบกัน (ทำตอนบท 022) | `.batch` ได้ `parsed` เป็น `null` ทั้ง 6 ข้อแม้ args ของ 4 ข้อผ่าน schema · `invoke` ทีละข้อได้ `parsed` เป็น `null` เฉพาะ 2 ข้อที่ args ไม่ผ่าน |
 
 - **กฎที่ใช้ตัดสิน:** A >= 4/5 และ B >= 5/6 -> ทำแผนต่อตามเดิม · `null` 2 ครั้งขึ้นไป -> `.nullish()` · C ไม่ถึง 5/5 -> ลดเกณฑ์ 020 exercise-2 · D, E ใช้เขียน README เท่านั้น
 - **ผลที่เลือก:** A 5/5 และ B 6/6 ผ่านเกณฑ์ ไม่มี `null` (0 < 2) จึงคง `.optional()` ไม่ต้องใช้ `.nullish()` · C ได้ 5/5 จึงคงเกณฑ์ `020 exercise-2` ที่ 3/3 · ไม่ต้องแก้ shim และไม่เติม `tool_choice`
 - **ข้อควรระวัง:** ผลเป็นของ deepseek ผ่าน shim เท่านั้น (ทดลอง 1 รอบ ตัวอย่างน้อย) ต้องยืนยันกับ Ollama / Gemini จริงใน 6b
+- **ผลข้างเคียงของ includeRaw (จากรอบ F):** `includeRaw` ห่อ parser ด้วย `withFallbacks` ระดับ batch ถ้าใช้ `.batch` แล้วมีข้อเดียวแปลงไม่ผ่าน `parsed` ของทุกข้อจะเป็น `null` บท 022 จึงเรียก `invoke` ทีละข้อ (ทั้ง example และแบบฝึกหัด 1) เพราะต้องบอกได้ว่าข้อไหนผิด
 
 ### langgraph-cli dev
 
@@ -504,4 +506,9 @@
     - JSON mode ของ Ollama (`format: "json"`) ผ่าน `JSON.parse` ตรงๆ กี่ครั้งจาก 5 (ผล 6a: 5/5 ทั้งแบบเปิดและไม่เปิด JSON mode) · `format: "json"` ใช้ได้บน Ollama Cloud ไหม (เอกสาร Cloud ไม่รองรับ `jsonSchema` แต่ JSON mode อาจต่างกัน) · เมื่อ prompt ขอ JSON อย่างเดียวโดยไม่เปิด JSON mode: Gemini และ Ollama ห่อด้วย ```` ```json ```` หรือมีข้อความนำกี่ครั้งจาก 5 (6a เจอ 0 ครั้ง ผู้เรียนที่ใช้โมเดลอื่นอาจเจอ)
     - บท 021 แบบฝึกหัด 1: ถ้าโมเดลเดารหัสสินค้าที่ไม่มีจริง `.refine` จับได้ไหม (ควรได้ `OutputParserException` ไม่ใช่ `แนะนำ: P999 …`) และโมเดลเลือกสินค้าในงบ 500 บาทจริงหรือไม่
     - ผลทั้งหมดนี้ใช้ปรับ README และเกณฑ์ของบท 020–022 เท่านั้น ห้ามลดเกณฑ์โดยไม่จดเหตุผลลง "ผล 6b"
+  - 022 (บทใหม่ แผน 3 ตรวจได้แค่ opencode-dev):
+    - `.batch` กับ `maxConcurrency: 2` บน Ollama Cloud และ Gemini (429?) · บน shim พบว่า `includeRaw` + `.batch` คืน `parsed` เป็น `null` ทั้งชุดเมื่อมีข้อเดียว args ไม่ผ่าน (ดูรอบ F ข้างบน)
+    - `raw.tool_calls` ของ `ChatGoogle` เมื่อ args ไม่ผ่าน
+    - ข้อ 1 summary ที่จำกัด 15 ตัวอักษรล้มบ่อยแค่ไหนบนโมเดลจริง
+    - ข้อ 3 ลองแชทด้วยมือ `pnpm lesson 022 exercise-3.ollama` กับ provider จริง ถามคำสั่งซื้อของคนอื่นแล้วต้องไม่เห็นสถานะ
   - ไฟล์เฉลย `exercise-*.google.ts` ของบท 017–019 บน `solutions` (บทละ 2 ไฟล์ รวม 6 ไฟล์) ยังไม่เคยรันกับ Gemini จริง
