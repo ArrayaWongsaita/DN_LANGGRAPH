@@ -442,3 +442,10 @@
     - Ollama Cloud key ผิดได้ 401
     - `fetch failed` บน Windows ใช้เวลาเท่าไร
     - error เมื่อโมเดลไม่รองรับ tools
+  - 013:
+    - `ChatGoogle` `.stream(q, { timeout: 1 })` ได้ `TimeoutError` และ `maxRetries` ลองใหม่จริงเมื่อเจอ 429
+    - ข้อความเมื่อเครดิต Ollama Cloud หมด และลิงก์ dashboard (`TODO(6b)` ใน README)
+  - 014:
+    - ลิมิตของแผนฟรี Gemini และของ Ollama Cloud (`TODO(6b)` ใน README)
+    - `handleChatModelStart` ทำงานกับ `ChatGoogle`
+    - batch แบบไม่จำกัดกับแผนฟรีได้ 429 ไหม (จดผล ห้ามใส่เป็นเกณฑ์)
