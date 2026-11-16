@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ENV_LESSON } from "../src/lib/env";
 import { runModule } from "./run";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -31,7 +32,7 @@ describe("runModule", () => {
   it("run-cli: EnvError → ข้อความไทยบรรทัดเดียว exit 1", () => {
     const r = spawnSync(process.execPath, ["--import", "tsx", "scripts/run-cli.ts", envFixture], { cwd: repoRoot, env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot }, encoding: "utf8" });
     expect(r.status).toBe(1);
-    expect(r.stderr.trim()).toBe("ยังไม่ได้ตั้งค่า GOOGLE_API_KEY ในไฟล์ .env (ดูวิธีตั้งในบท 005)");
+    expect(r.stderr.trim()).toBe(`ยังไม่ได้ตั้งค่า GOOGLE_API_KEY ในไฟล์ .env (ดูวิธีตั้งในบท ${ENV_LESSON.GOOGLE_API_KEY})`);
   });
   it("pnpm lesson 999 → หาบทไม่เจอ exit 1", () => {
     const r = spawnSync(process.execPath, ["--import", "tsx", "scripts/lesson.ts", "999"], { cwd: repoRoot, encoding: "utf8" });

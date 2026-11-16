@@ -51,7 +51,8 @@ function allRules(root: string): Problem[] {
 function goodRoot(): string {
   const root = newRoot();
   const readme = readmeText(README_HEADINGS.filter((h) => h !== "เปิดดูใน Studio"));
-  for (const d of ["001-intro", "002-a", "003-b", "004-c", "005-d", `${PROVIDER_PAIRS_FROM}-raw-fetch`]) write(root, `lessons/${d}/README.md`, readme);
+  const earlier = Array.from({ length: Number(PROVIDER_PAIRS_FROM) - 1 }, (_, i) => `${String(i + 1).padStart(3, "0")}-a`);
+  for (const d of [...earlier, `${PROVIDER_PAIRS_FROM}-raw-fetch`]) write(root, `lessons/${d}/README.md`, readme);
   write(root, `lessons/${PROVIDER_PAIRS_FROM}-raw-fetch/example.ollama.ts`, "export const a = 1;\n");
   write(root, `lessons/${PROVIDER_PAIRS_FROM}-raw-fetch/example.google.ts`, "export const a = 2;\n");
   write(root, `internal/checks/${PROVIDER_PAIRS_FROM}.ts`, "export {};\n");
