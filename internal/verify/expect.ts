@@ -47,3 +47,29 @@ export function extractRounds(text: string): Round[] {
     n: Number(m[1]), text: m[2].trim(), inputTokens: Number(m[3]), outputTokens: Number(m[4]),
   }));
 }
+
+export const SECRET_ENV_NAMES: readonly string[] = [
+  "GOOGLE_API_KEY", "OLLAMA_API_KEY", "OPENCODE_API_KEY", "VERIFY_OLLAMA_CLOUD_API_KEY", "LANGSMITH_API_KEY",
+];
+
+// stdout/stderr ต้องไม่มีค่าของ key ที่ส่งให้ child ข้อความ error ไม่แสดงค่า
+export function expectNoSecrets(run: RunResult, label: string): void {
+  for (const name of SECRET_ENV_NAMES) {
+    const value = run.env[name];
+    if (value === undefined || value === "") continue;
+    for (const [stream, text] of [["stdout", run.stdout], ["stderr", run.stderr]] as const) {
+      if (text.includes(value)) throw new CheckFailure(`${label}: พบค่าของ ${name} ใน ${stream} (ไม่แสดงค่า)`);
+    }
+  }
+}
+
+// ข้อความหลัง start ตัวแรก ถึงก่อน end ตัวแรกที่อยู่หลังจากนั้น (end = null คือถึงท้าย) ตัดช่องว่างหัวท้าย
+export function extractSection(text: string, start: string, end: string | null, label: string): string {
+  const i = text.indexOf(start);
+  if (i < 0) throw new CheckFailure(`${label}: ไม่พบ "${start}"`);
+  const from = i + start.length;
+  if (end === null) return text.slice(from).trim();
+  const j = text.indexOf(end, from);
+  if (j < 0) throw new CheckFailure(`${label}: ไม่พบ "${end}"`);
+  return text.slice(from, j).trim();
+}
