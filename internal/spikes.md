@@ -511,4 +511,5 @@
     - `raw.tool_calls` ของ `ChatGoogle` เมื่อ args ไม่ผ่าน
     - ข้อ 1 summary ที่จำกัด 15 ตัวอักษรล้มบ่อยแค่ไหนบนโมเดลจริง
     - ข้อ 3 ลองแชทด้วยมือ `pnpm lesson 022 exercise-3.ollama` กับ provider จริง ถามคำสั่งซื้อของคนอื่นแล้วต้องไม่เห็นสถานะ
-  - ไฟล์เฉลย `exercise-*.google.ts` ของบท 017–019 บน `solutions` (บทละ 2 ไฟล์ รวม 6 ไฟล์) ยังไม่เคยรันกับ Gemini จริง
+    - `describeFailure` ของข้อ 1 ตรวจ args ด้วย `StrictQuestion` (= `CustomerQuestion` + `summary.max(15)`) ไม่ใช่ `CustomerQuestion` เพราะ `CustomerQuestion.safeParse` ผ่านพอดีกับ args ที่ล้มในขั้น schema ที่เข้มกว่า — บน provider จริงดูว่า summary ที่ยาวเกิน 15 ตัวอักษรเกิดบ่อยแค่ไหน และ `.invoke` ทีละข้อยังคืน `null` เฉพาะข้อที่ args ไม่ผ่าน (รอบ F) ไม่ใช่ทั้งชุดแบบ `.batch`
+  - ไฟล์เฉลย `exercise-*.google.ts` ของบท 017–022 บน `solutions` ทั้ง 13 ไฟล์ (017–019: บทละ 2 รวม 6, 020–021: บทละ 2 รวม 4, 022: 3) ยังไม่เคยรันกับ Gemini จริง · ต้องรันตามข้อบน (solutions) ให้ผ่านก่อนลบหมายเหตุในเฉลย
