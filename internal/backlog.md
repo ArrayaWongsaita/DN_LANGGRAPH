@@ -19,7 +19,7 @@
 - ตรวจสระอำ (sara am) ใน `.env.example` และ `package.json` ที่ปัจจุบันถูกข้าม (แผน 22)
 - เพิ่ม `expectBlock` ใน `internal/verify/expect.ts` ตรวจบล็อก "ต้องตรงทุกตัว" ใน README อัตโนมัติ (แผน 22)
 - test ที่ยังขาด: ทางแยก `child.error` ของ runner, SIGTERM-only timeout, บัฟเฟอร์ไม่จำกัด, parse argv (แผน 22)
-- แผน 4: ข้อความท้าย renumber ยังบอกให้แก้ *.test.ts เอง · test ของกฎ fence ใน README ไม่ครอบคลุม indented fence/closer มีข้อความต่อท้าย
+- แผน 4: ข้อความท้าย renumber ยังบอกให้แก้ *.test.ts เอง · test ของกฎ fence ใน README ไม่ครอบคลุม indented fence/closer มีข้อความต่อท้าย · เลขบทในคอลัมน์ที่ 2 ของตาราง "สิ่งที่ต้องมี" ใน README (เช่น `| … | 003 | ฟรี |`) ไม่ถูกเลื่อนเวลา renumber (เห็นตอนทดลอง `insert 002`)
 
 ## Later (จากการรีวิวแผน 2)
 

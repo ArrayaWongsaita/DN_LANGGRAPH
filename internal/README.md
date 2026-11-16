@@ -108,6 +108,22 @@ pnpm renumber remove 012             # หลังลบโฟลเดอร�
   3. `git merge main` ใน worktree นั้น
   4. conflict จะอยู่ใน `lessons/*/exercise-*` เท่านั้น ให้ใช้ฝั่งเฉลย: `git diff --name-only --diff-filter=U | xargs git checkout --ours` แล้ว `git add -A` และ commit (อย่าเลือก `--theirs` เพราะจะเอา 👉 กลับมา)
   5. `pnpm check` (มีกฎจับ `pnpm lesson MMM` ที่เลขไม่ตรงบท) และ `pnpm test` ต้องผ่าน
+- **ทดลองก่อนเลื่อนเลขจริง:** ทำใน clone ทิ้งจาก commit ปัจจุบัน (ไม่แตะ repo และไม่ต้องใช้ key)
+
+  ```bash
+  N=017
+  TRIAL="$(mktemp -d)/trial"
+  git clone --quiet --local . "$TRIAL" && cd "$TRIAL"
+  pnpm install --offline --frozen-lockfile
+  pnpm renumber insert $N
+  mkdir "lessons/$N-new"
+  printf '# บทแทรก\n\n## จบบทนี้แล้วทำอะไรได้\n\n## เชื่อมกับที่รู้แล้ว\n\n## เนื้อหา\n\n## จุดที่มักพลาด\n\n## วิธีรัน\n\n## ผลที่ควรเห็น\n\n## แบบฝึกหัด\n\n## อ่านเพิ่ม\n' > "lessons/$N-new/README.md"
+  pnpm check && pnpm test
+  cd - && rm -rf "$(dirname "$TRIAL")"
+  ```
+
+  บทใหม่ต้องมี README ครบหัวข้อที่ `pnpm check` บังคับ (8 หัวข้อ ยังไม่ต้องมี `## เปิดดูใน Studio` เพราะเริ่มบท 046) และไม่มีไฟล์รัน จึงไม่ต้องมี `internal/checks/NNN.ts` · ต้องขึ้น `โครงคอร์สถูกต้อง` และ test ผ่านทั้งหมด · ทำ 2 รอบคือเลขที่อยู่กลางช่วงและเลขต้นๆ ที่ข้ามค่าคงที่ทุกตัว
+- **ผลหลังมีบท 017–022** (clone ใหม่จาก commit ของ Task 10 · `insert 017` และ `insert 002`): ทั้ง 2 รอบขึ้น `โครงคอร์สถูกต้อง` และ test ผ่าน 407/407 · รอบ `insert 002` เลื่อนค่าคงที่ครบทุกตัว (`SETUP_LESSON`, `ENV_LESSON`, `STUDIO_FROM`, `PROVIDER_PAIRS_FROM`/`TO`) โดยไม่ต้องแก้ test
 
 ห้าม push จนกว่าจะครบเงื่อนไขในเอกสารออกแบบข้อ 5.14 แล้วจึง push `main` และ `solutions` พร้อมกันครั้งเดียว
 
