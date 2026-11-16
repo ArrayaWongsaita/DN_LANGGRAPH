@@ -2,7 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { applyRenumber, mapNumber, planRenumber, renumberText, type RenumberOp } from "./renumber";
+import { spawnSync } from "node:child_process";
+import { applyRenumber, mapNumber, planRenumber, renumberText, runRenumber, type RenumberOp } from "./renumber";
 
 const ins: RenumberOp = { kind: "insert", at: 10 };
 const rem: RenumberOp = { kind: "remove", at: 10 };
@@ -50,6 +51,36 @@ describe("renumberText insert", () => {
     expect(t("| 010 🏫 | [`010-model-params`](lessons/010-model-params/README.md) | x |", ins, c).text).toBe(
       "| 011 🏫 | [`011-model-params`](lessons/011-model-params/README.md) | x |",
     );
+  });
+});
+
+describe("renumberText lists, literals, CRLF", () => {
+  it("shifts every number in lists and ranges", () => {
+    const o: RenumberOp = { kind: "insert", at: 7 };
+    expect(t("บท 006, 007 และ 008", o).text).toBe("บท 006, 008 และ 009");
+    expect(t("บท 006-008", o).text).toBe("บท 006-009");
+    expect(t("บท 006–008", o).text).toBe("บท 006–009");
+    expect(t("บท 007–008", o).text).toBe("บท 008–009");
+  });
+  it("remove: list items and range ends", () => {
+    const o: RenumberOp = { kind: "remove", at: 7 };
+    expect(t("บท 006, 008 หรือ 009", o).text).toBe("บท 006, 007 หรือ 008");
+    expect(t("บท 006–007", o).text).toBe("บท 006–006");
+    expect(t("บท 007–009", o).text).toBe("บท 007–008");
+  });
+  it("does not cross newlines or long numbers", () => {
+    expect(t("บท\n010").text).toBe("บท\n010");
+    expect(t("บท 1006 บท 0100").text).toBe("บท 1006 บท 0100");
+    expect(t("pnpm lesson 0100").text).toBe("pnpm lesson 0100");
+  });
+  it("leaves HTTP-status-like literals", () => {
+    const c = { ...ctx, literals: true };
+    for (const s of ['"200"', '"404"', '"500"']) expect(t(s, ins, c).text).toBe(s);
+    expect(t('"012"', ins, c).text).toBe('"013"');
+  });
+  it("works with CRLF", () => {
+    const c = { ...ctx, readmeTable: true };
+    expect(t("| 010 | x |\r\n| 011 | y |\r\nบท 010\r\n", ins, c).text).toBe("| 011 | x |\r\n| 012 | y |\r\nบท 011\r\n");
   });
 });
 
@@ -124,5 +155,74 @@ describe("planRenumber / applyRenumber", () => {
     expect(!bad.ok && bad.message).toBe("เลขบทต้องเป็น 001–999");
     const none = planRenumber(root, { kind: "insert", at: 9 });
     expect(!none.ok && none.message).toContain("ไม่มีบทตั้งแต่ 009 ขึ้นไป");
+  });
+
+  it("aborts on destination collision without touching anything", () => {
+    fixture();
+    write("lessons/003-b", "stray file");
+    const r = planRenumber(root, { kind: "insert", at: 2 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toContain("lessons/003-b");
+    expect(names("lessons")).toEqual(["001-a", "002-b", "003-b", "003-c"]);
+  });
+
+  it("rolls back and reports when a step fails", () => {
+    fixture();
+    const r = planRenumber(root, { kind: "insert", at: 2 });
+    if (!r.ok) throw new Error(r.message);
+    r.plan.renames.push({ from: "lessons/999-missing", to: "lessons/998-missing" });
+    expect(() => applyRenumber(root, r.plan)).toThrow(/ล้มเหลวที่ขั้น.*\n.*\nย้อนกลับทุกขั้น/);
+    expect(names("lessons")).toEqual(["001-a", "002-b", "003-c"]);
+    expect(read("src/lib/env.ts")).toContain('"003"');
+  });
+
+  describe("CLI", () => {
+    const run = (args: string[]) => {
+      const out: string[] = [];
+      const err: string[] = [];
+      const code = runRenumber(args, root, (l) => out.push(l), (l) => err.push(l));
+      return { code, out: out.join("\n"), err: err.join("\n") };
+    };
+    const git = (...a: string[]) => spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: root });
+
+    it("dry-run writes nothing, even on a dirty tree", () => {
+      fixture();
+      const r = run(["insert", "2", "--dry-run"]);
+      expect(r.code).toBe(0);
+      expect(r.out).toContain("ยังไม่ได้แก้ไฟล์ (--dry-run)");
+      expect(names("lessons")).toEqual(["001-a", "002-b", "003-c"]);
+    });
+    it("rejects bad usage", () => {
+      fixture();
+      expect(run(["nope", "2"]).code).toBe(1);
+      expect(run(["insert"]).err).toContain("ใช้งาน: pnpm renumber");
+    });
+    it("aborts when git is unavailable for the folder", () => {
+      fixture();
+      const r = run(["insert", "2"]);
+      expect(r.code).toBe(1);
+      expect(r.err).toContain("ตรวจสถานะ git ไม่ได้");
+      expect(names("lessons")).toEqual(["001-a", "002-b", "003-c"]);
+    });
+    it("aborts on a dirty tree, proceeds when clean or with --force", () => {
+      fixture();
+      git("init", "-q");
+      const dirty = run(["insert", "2"]);
+      expect(dirty.code).toBe(1);
+      expect(dirty.err).toContain("ยังไม่ได้ commit");
+      expect(names("lessons")).toEqual(["001-a", "002-b", "003-c"]);
+      git("add", "-A");
+      git("commit", "-q", "-m", "init");
+      const ok = run(["insert", "2"]);
+      expect(ok.code).toBe(0);
+      expect(ok.out).toContain("pnpm test");
+      expect(names("lessons")).toEqual(["001-a", "003-b", "004-c"]);
+    });
+    it("--force skips the git check", () => {
+      fixture();
+      const r = run(["insert", "2", "--force"]);
+      expect(r.code).toBe(0);
+      expect(names("lessons")).toEqual(["001-a", "003-b", "004-c"]);
+    });
   });
 });

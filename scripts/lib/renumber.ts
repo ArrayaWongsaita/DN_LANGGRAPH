@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { duplicateNumbers, listLessons } from "./lessons";
@@ -44,15 +45,34 @@ export function renumberText(
     return `${pad(ns)}${sep}${pad(ne)}`;
   };
 
+  // รายการเลขหลัง "บท": คั่นด้วย , และ หรือ หรือขีด เลขทุกตัวในรายการต้องเลื่อน
+  const SEP = String.raw`[ \t]*(?:,|และ|หรือ|[–-])[ \t]*`;
+  const list = (chain: string): string => {
+    const tokens = chain.split(/(\d{3})/); // [sep, num, sep, num, ...]
+    const out: string[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      if (i % 2 === 0) {
+        out.push(tokens[i]);
+        continue;
+      }
+      const n = tokens[i];
+      const prevDash = i >= 2 && /[–-]/.test(tokens[i - 1]);
+      const nextDash = i + 2 < tokens.length && /[–-]/.test(tokens[i + 1]);
+      if (prevDash && tokens[i - 2] !== n) out.push(pad(mapNumber(Number(n), op) ?? Number(n) - 1));
+      else if (nextDash && tokens[i + 2] !== n) out.push(pad(mapNumber(Number(n), op) ?? Number(n)));
+      else out.push(single(n));
+    }
+    return out.join("");
+  };
   const parts = [
-    String.raw`(?<lp>บท\s*)(?<la>\d{3})(?:(?<ls>[–-])(?<lb>\d{3}))?(?!\d)`,
+    String.raw`(?<lp>บท[ \t]*)(?<ll>\d{3}(?:${SEP}\d{3})*)(?!\d)`,
     String.raw`(?<pp>pnpm (?:lesson|verify|studio|test) )(?<pa>\d{3})(?:(?<ps>-)(?<pb>\d{3}))?(?!\d)`,
     String.raw`(?<cp>checks/)(?<cn>\d{3})(?=\.ts)`,
   ];
   const names = [...ctx.folders].sort((x, y) => y.length - x.length).map(escapeRe);
   if (names.length > 0) parts.unshift(String.raw`(?<![\d\w-])(?<fn>${names.join("|")})(?![\w-])`);
   if (ctx.literals) parts.push(String.raw`(?<qp>")(?<qn>\d{3})(?=")`);
-  if (ctx.readmeTable) parts.push(String.raw`(?<tp>^\|\s*)(?<tn>\d{3})(?!\d)`);
+  if (ctx.readmeTable) parts.push(String.raw`(?<tp>^\|[ \t]*)(?<tn>\d{3})(?!\d)`);
 
   const re = new RegExp(parts.join("|"), "gmu");
   const out = text.replace(re, (whole: string, ...args: unknown[]) => {
@@ -60,14 +80,16 @@ export function renumberText(
     let next = whole;
     if (g.fn !== undefined) {
       next = single(g.fn.slice(0, 3)) + g.fn.slice(3);
-    } else if (g.la !== undefined) {
-      next = g.lp + range(g.la, g.ls, g.lb);
+    } else if (g.ll !== undefined) {
+      next = g.lp + list(g.ll);
     } else if (g.pa !== undefined) {
       next = g.pp + range(g.pa, g.ps, g.pb);
     } else if (g.cn !== undefined) {
       next = g.cp + single(g.cn);
     } else if (g.qn !== undefined) {
-      next = g.qp + single(g.qn);
+      // เลข 200-599 ในเครื่องหมายคำพูดมักเป็น HTTP status ไม่ใช่เลขบท (คอร์สมีไม่ถึง 200 บท) จึงไม่แตะ
+      const v = Number(g.qn);
+      next = v >= 200 && v <= 599 ? whole : g.qp + single(g.qn);
     } else if (g.tn !== undefined) {
       next = g.tp + single(g.tn);
     }
@@ -134,6 +156,16 @@ export function planRenumber(root: string, op: RenumberOp): { ok: true; plan: Re
     if (checkNums.includes(num)) renames.push({ from: `internal/checks/${num}.ts`, to: `internal/checks/${pad(mapped)}.ts` });
   }
 
+  // ปลายทางต้องไม่ชนกับของที่มีอยู่ (ยกเว้นที่ถูกย้ายออกไปก่อนหน้าในลำดับ)
+  const gone = new Set<string>();
+  const added = new Set<string>();
+  for (const r of renames) {
+    const occupied = added.has(r.to) || (fs.existsSync(path.join(root, r.to)) && !gone.has(r.to));
+    if (occupied) return { ok: false, message: `ปลายทาง ${r.to} มีอยู่แล้ว ย้าย/ลบออกก่อนแล้วรันใหม่` };
+    gone.add(r.from);
+    added.add(r.to);
+  }
+
   // รายการไฟล์ที่แก้
   const files: string[] = [];
   walk(root, "lessons", [".md", ".ts"], files);
@@ -154,7 +186,124 @@ export function planRenumber(root: string, op: RenumberOp): { ok: true; plan: Re
   return { ok: true, plan: { renames, edits, removedRefs } };
 }
 
+function finalPath(file: string, renames: RenumberPlan["renames"]): string {
+  let out = file;
+  for (const r of renames) {
+    if (out === r.from || out.startsWith(`${r.from}/`)) {
+      out = r.to + out.slice(r.from.length);
+      break;
+    }
+  }
+  return out;
+}
+
+// ย้ายโฟลเดอร์ก่อน แล้วค่อยเขียนไฟล์ที่แก้ (ที่อยู่ใหม่) ถ้าล้มเหลวกลางทางจะพยายามย้อนกลับ แล้ว throw พร้อมรายงานว่าทำอะไรไปแล้ว
 export function applyRenumber(root: string, plan: RenumberPlan): void {
-  for (const e of plan.edits) fs.writeFileSync(path.join(root, e.file), e.text);
-  for (const r of plan.renames) fs.renameSync(path.join(root, r.from), path.join(root, r.to));
+  const undo: { label: string; run: () => void }[] = [];
+  const done: string[] = [];
+  const steps: { label: string; run: () => void }[] = [];
+  for (const r of plan.renames) {
+    steps.push({
+      label: `เปลี่ยนชื่อ ${r.from} → ${r.to}`,
+      run: () => {
+        fs.renameSync(path.join(root, r.from), path.join(root, r.to));
+        undo.push({ label: `ย้าย ${r.to} กลับเป็น ${r.from}`, run: () => fs.renameSync(path.join(root, r.to), path.join(root, r.from)) });
+      },
+    });
+  }
+  for (const e of plan.edits) {
+    const target = path.join(root, finalPath(e.file, plan.renames));
+    steps.push({
+      label: `แก้ ${finalPath(e.file, plan.renames)}`,
+      run: () => {
+        const original = fs.readFileSync(target, "utf8");
+        fs.writeFileSync(target, e.text);
+        undo.push({ label: `คืนเนื้อหา ${finalPath(e.file, plan.renames)}`, run: () => fs.writeFileSync(target, original) });
+      },
+    });
+  }
+  for (let i = 0; i < steps.length; i++) {
+    try {
+      steps[i].run();
+      done.push(steps[i].label);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      const rollbackFailed: string[] = [];
+      for (const u of undo.reverse()) {
+        try {
+          u.run();
+        } catch {
+          rollbackFailed.push(u.label);
+        }
+      }
+      const lines = [`ล้มเหลวที่ขั้น: ${steps[i].label} (${reason})`, `ทำไปแล้วก่อนล้มเหลว ${done.length} ขั้น`];
+      lines.push(
+        rollbackFailed.length === 0
+          ? "ย้อนกลับทุกขั้นที่ทำไปแล้วสำเร็จ ไม่มีอะไรถูกแก้ค้างไว้"
+          : `ย้อนกลับไม่สำเร็จ ต้องแก้เอง (ใช้ git status / git checkout .): ${rollbackFailed.join("; ")}`,
+      );
+      lines.push(`ขั้นที่ยังไม่ได้ทำ ${steps.length - i - 1} ขั้น`);
+      throw new Error(lines.join("\n"));
+    }
+  }
+}
+
+export type GitState = "clean" | "dirty" | "unknown";
+
+export function gitState(root: string): GitState {
+  const r = spawnSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" });
+  if (r.error || r.status !== 0) return "unknown";
+  return r.stdout.trim() === "" ? "clean" : "dirty";
+}
+
+// คืน exit code (CLI บางๆ อยู่ที่ scripts/renumber.ts)
+export function runRenumber(
+  argv: string[],
+  root: string,
+  out: (line: string) => void = console.log,
+  err: (line: string) => void = console.error,
+): number {
+  const dryRun = argv.includes("--dry-run");
+  const force = argv.includes("--force");
+  const rest = argv.filter((a) => a !== "--dry-run" && a !== "--force");
+  const kind = rest[0];
+  const m = rest[1] !== undefined && /^\d{1,3}$/.test(rest[1]) ? Number(rest[1]) : 0;
+  if ((kind !== "insert" && kind !== "remove") || m < 1 || rest.length !== 2) {
+    err("ใช้งาน: pnpm renumber <insert|remove> NNN [--dry-run]");
+    return 1;
+  }
+  const at3 = pad(m);
+  const result = planRenumber(root, { kind, at: m });
+  if (!result.ok) {
+    err(result.message);
+    return 1;
+  }
+  const { plan } = result;
+  if (!dryRun && !force) {
+    const state = gitState(root);
+    if (state === "dirty") {
+      err("มีไฟล์ที่ยังไม่ได้ commit ให้ commit หรือ stash ก่อน (หรือใช้ --force ถ้ามั่นใจ)");
+      return 1;
+    }
+    if (state === "unknown") {
+      err("ตรวจสถานะ git ไม่ได้ จึงไม่กล้าแก้ไฟล์ ให้ติดตั้ง git หรือใช้ --force ถ้ามั่นใจ");
+      return 1;
+    }
+  }
+  for (const r of plan.renames) out(`เปลี่ยนชื่อ: ${r.from} → ${r.to}`);
+  for (const e of plan.edits) out(`แก้: ${e.file} (${e.changes} จุด)`);
+  for (const r of plan.removedRefs) out(`⚠️ ยังมีที่อ้างถึงบท ${at3} ที่ถูกลบ: ${r.file} (${r.count} จุด) ให้แก้เอง`);
+  if (dryRun) {
+    out("ยังไม่ได้แก้ไฟล์ (--dry-run)");
+    return 0;
+  }
+  try {
+    applyRenumber(root, plan);
+  } catch (e) {
+    err(e instanceof Error ? e.message : String(e));
+    return 1;
+  }
+  out(kind === "insert" ? `เสร็จแล้ว สร้างโฟลเดอร์ lessons/${at3}-<slug> ของบทใหม่ แล้วรัน pnpm check และ pnpm test` : "เสร็จแล้ว รัน pnpm check และ pnpm test");
+  out("หมายเหตุ: ไฟล์ *.test.ts ไม่ถูกแก้อัตโนมัติ ให้รัน pnpm test แล้วแก้เลขบทในเทสต์เองถ้ามี");
+  return 0;
 }
