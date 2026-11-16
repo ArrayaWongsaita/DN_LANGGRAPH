@@ -14,9 +14,10 @@ export const GUARD_ENV: Readonly<Record<string, string>> = {
 
 export interface GuardResult { file: string; exitCode: number | null; stdout: string; stderr: string; fetchCalls: number; timedOut: boolean }
 
-// path เต็มของ exercise-*.ts ที่ยังมี "// 👉" ในบทที่เลข >= from
+// เก็บ timeout ของแต่ละผลลัพธ์ไว้ใช้ในข้อความตอนล้ม
 const timeouts = new WeakMap<GuardResult, number>();
 
+// path เต็มของ exercise-*.ts ที่ยังมี "// 👉" ในบทที่เลข >= from
 export function guardTargets(lessonsDir: string, from: string): string[] {
   const targets: string[] = [];
   for (const lesson of listLessons(lessonsDir)) {

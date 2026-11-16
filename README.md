@@ -126,7 +126,7 @@ pnpm preflight
 | 007 🏫 | [`007-first-chat-model`](lessons/007-first-chat-model/README.md) | `ChatOllama` / `ChatGoogle`, `.invoke()` · อ่านคำตอบด้วย `.text` · อ่านชื่อโมเดลจาก `.env` · เทียบกับบท 006 |
 | 008 🏫 | [`008-ai-message`](lessons/008-ai-message/README.md) | อ่าน `AIMessage`: `usage_metadata`, `response_metadata`, `contentBlocks` รูปแบบกลางของทุก provider |
 | 009 🏫 | [`009-messages-roles`](lessons/009-messages-roles/README.md) | system / human / ai · รูปย่อ `{ role, content }` · system message เปลี่ยนนิสัยโมเดล |
-| 010 🏫 | [`010-model-params`](lessons/010-model-params/README.md) | `temperature`, `maxTokens` · รันซ้ำแล้วดูความต่าง · Gemini รุ่นใหม่เลิกใช้ `temperature` |
+| 010 🏫 | [`010-model-params`](lessons/010-model-params/README.md) | `temperature`, `numPredict` / `maxOutputTokens` · รันซ้ำแล้วดูความต่าง · Gemini รุ่นใหม่เลิกใช้ `temperature` |
 | 011 🏫 | [`011-thinking`](lessons/011-thinking/README.md) | โมเดลที่คิดก่อนตอบ · ปิดหรือลดการคิด · ดู reasoning block · ผลต่อเวลาตอบ |
 | 012 🏫 | [`012-errors`](lessons/012-errors/README.md) | อ่าน error: ลืมเปิด Ollama, ยังไม่ได้ `pull` โมเดล, ชื่อโมเดลผิด, key ผิด, โมเดลไม่รองรับ tool |
 | 013 🏫 | [`013-quota-retry`](lessons/013-quota-retry/README.md) | 429 ชนลิมิต, เครดิต Ollama Cloud หมด · retry, `timeout` · ดูยอดที่ใช้ไปใน dashboard |

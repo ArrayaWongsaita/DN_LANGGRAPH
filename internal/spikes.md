@@ -438,18 +438,23 @@
     - `thinkingLevel` ใช้ได้กับ `GOOGLE_MODEL` ที่เลือกไหม (บางรุ่นใช้ `thinkingBudget`) และได้ block reasoning จริงไหม
     - รุ่น Ollama ที่เลือกรองรับ `think: true/false` ไหม และ error ของรุ่นที่ไม่รองรับ (`TODO(6b)` ใน README)
   - 012:
+    - หลังรันจริง ให้ล็อก `exercise-1.google` (011: ต้องไม่ยอมรับ thought ว่าง) และ `exercise-1.google` (012: ตอนนี้ผ่านด้วยข้อความต่างกัน 2 ข้อความซึ่ง 429 ปลอมให้ฟรี) รวมถึง 010 (`ได้ข้อความ: 0`) ให้เข้มขึ้น
     - field status ของ error จาก `ChatGoogle` (`status` หรือ `status_code`) และเลขจริงเมื่อชื่อโมเดลผิดหรือ key ผิด แล้วล็อกในเกณฑ์ `example.google`
-    - Ollama Cloud key ผิดได้ 401
+    - Ollama Cloud key ผิดได้ 401 · ชื่อโมเดลผิดได้ 404 รูปแบบเดียวกับ Ollama ในเครื่อง (สถานการณ์ที่ 2 ของ exercise-1/2) · Gemini ที่ key ผิดน่าจะได้ 400 ไม่ใช่ 401 (ถ้าใช่ สาขา `401 || 403` ในเฉลยจะตกไปข้อความทั่วไป เกณฑ์ยังผ่าน แต่ควรปรับ README/เฉลยให้ตรง)
     - `fetch failed` บน Windows ใช้เวลาเท่าไร
     - error เมื่อโมเดลไม่รองรับ tools
   - 013:
-    - `ChatGoogle` `.stream(q, { timeout: 1 })` ได้ `TimeoutError` และ `maxRetries` ลองใหม่จริงเมื่อเจอ 429
+    - `ChatGoogle` `.stream(q, { timeout: 1 })` ได้ `TimeoutError` (ไฟล์ `.google.ts` ตั้ง `maxRetries: 0` แล้ว เพราะไลบรารีลองใหม่เองโดยปริยายและไม่หยุดเมื่อเจอ `TimeoutError` ออฟไลน์พบโปรเซสค้างราว 100 วินาทีหลังจบ)
+    - เวลาที่ `example.google` / `exercise-1.google` จบจริงหลังพิมพ์คำตอบ (ต้องจบทันที ไม่ค้าง) และจำนวนครั้งที่ยิง HTTP จริงเมื่อเจอ 429 (ควรเท่ากับจำนวนที่ `.withRetry()` ลอง ไม่คูณด้วยการลองในตัว)
+    - ผลถ้าถอด `maxRetries: 0` ออก: ยืนยันว่า `ChatGoogle` ลองในตัวเมื่อเจอ 429 จริงกี่รอบ
     - ข้อความเมื่อเครดิต Ollama Cloud หมด และลิงก์ dashboard (`TODO(6b)` ใน README)
   - 014:
     - ลิมิตของแผนฟรี Gemini และของ Ollama Cloud (`TODO(6b)` ใน README)
     - `handleChatModelStart` ทำงานกับ `ChatGoogle`
     - batch แบบไม่จำกัดกับแผนฟรีได้ 429 ไหม (จดผล ห้ามใส่เป็นเกณฑ์)
+    - ไฟล์ `.google.ts` ของบทนี้ตั้ง `maxRetries: 0` เหมือนบท 013 ถ้าถอดออก การลองใหม่ในตัวของ `ChatGoogle` ซ่อน 429 ใน `batch` ที่ไม่ได้จำกัด `maxConcurrency` หรือไม่ (ดูว่า "โดน 429" ที่ README บอกขึ้นให้เห็นจริงเมื่อปิดแล้ว)
   - 015:
+    - `example.google` ได้ข้อความครบ 3 ชิ้นก่อน `abort()` มีผลหรือไม่ (เกณฑ์ `หยุดกลางทาง หลังได้ 3 ชิ้น` ต้องการอย่างน้อย 3 ชิ้นที่มีข้อความ และไม่มีชิ้นค้างบัฟเฟอร์ส่งมาหลัง abort) ทั้งกับ Gemini และ Ollama จริง
     - `ChatGoogle` stream ได้หลายชิ้น (เกณฑ์ `example.google` ต้องการชิ้นที่มีข้อความอย่างน้อย 2 ชิ้น) และ `model.stream(q, { signal })` ที่ abort แล้วได้ `AbortError` (ชื่อ error ตรงกับที่ `example.google` และ `exercise-2.google` เช็ก) หรือ loop จบเอง ไม่ค้าง
     - Ollama จริงได้กี่ชิ้นต่อคำตอบ (README บอกว่าส่งทีละ token) และ abort กลาง stream ได้ `AbortError` เหมือนที่เห็นผ่าน shim
   - 016:
