@@ -17,3 +17,4 @@
 - คำอธิบายใน `lessons/004` เรื่องเงื่อนไขส่ง header Authorization ให้ตรงกับโค้ด (ส่งเมื่อมี `OLLAMA_API_KEY`) (แผน 22)
 - เพิ่ม `expectBlock` ใน `internal/verify/expect.ts` ตรวจบล็อก "ต้องตรงทุกตัว" ใน README อัตโนมัติ (แผน 22)
 - test ที่ยังขาด: ทางแยก `child.error` ของ runner, SIGTERM-only timeout, บัฟเฟอร์ไม่จำกัด, parse argv (แผน 22)
+- แผน 3: comment ใน scripts/lib/exercise-guard.ts (WeakMap/guardTargets) วางผิดที่ · กฎ pnpm lesson MMM==NNN ยังไม่มีทางหนีสำหรับบทที่ตั้งใจอ้างบทอื่น
