@@ -134,6 +134,12 @@ pnpm lesson 6 example.google.ts
 - [ ] ทำซ้ำใน Windows Terminal, terminal ของ VS Code และหน้าต่าง PowerShell แบบเก่า
 - [ ] ทำซ้ำโดยไม่ตั้ง `[Console]::InputEncoding` เพื่อดูว่าจำเป็นไหม · จดผล
 - [ ] กด Ctrl+C ระหว่างรอพิมพ์ → โปรแกรมจบเรียบร้อย ไม่ค้าง
+- [ ] ออกจากแชทบอทบท 016 (`pnpm lesson 016 example.ollama` หรือ `example.google`) ด้วยทุกวิธี แล้วดูว่าจบเอง พิมพ์ `ลาก่อนครับ` และ `จำนวนข้อความในประวัติ: N` (Ctrl+C ไม่พิมพ์บรรทัดเหล่านี้ ถือว่าปกติ) · เปิดโปรแกรมใหม่ทุกครั้ง:
+  - พิมพ์ `จบ` แล้ว Enter → จบ
+  - กด **Ctrl+D** → ไม่จบ (PowerShell ไม่ถือว่าเป็นสัญญาณจบ input) จดว่าเกิดอะไรขึ้น แล้วกด Ctrl+C
+  - กด **Ctrl+Z แล้ว Enter** → จบเอง
+  - ทำซ้ำทั้ง 3 ข้อใน Windows Terminal, terminal ของ VS Code และหน้าต่าง PowerShell แบบเก่า
+- [ ] pipe ข้อความไทยเข้าแชทบอท: `"สวัสดี ฉันชื่อสมชาย", "จบ" | pnpm lesson 016 example.ollama` ใน Windows PowerShell 5.1 และใน PowerShell 7 · จดว่าข้อความไทยที่โปรแกรมพิมพ์ย้อนกลับ (`คุณ: ...`) เพี้ยนไหม (README บท 016 บอกว่า 5.1 อาจเพี้ยนตาม `$OutputEncoding` ส่วนการพิมพ์เองไม่เพี้ยน) · ลองตั้ง `$OutputEncoding = [System.Text.Encoding]::UTF8` ก่อนแล้วเทียบผล
 
 ## ทดสอบเมื่อถึงแผนที่ 6: `pnpm studio NNN`
 
