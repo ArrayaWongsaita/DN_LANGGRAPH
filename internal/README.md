@@ -59,7 +59,7 @@ pnpm verify 001-006 --provider opencode-dev --repeat 3
 - zod `~4.6.7` และ import แบบ `import * as z from "zod"` (`z.config`, `z.locales.th`, `z.prettifyError`, `z.toJSONSchema` อยู่บน namespace นี้)
 - ข้อความ error ของ zod ต้องเป็นภาษาไทย: ไฟล์ที่พิมพ์ error เรียก `z.config(z.locales.th())` ครั้งเดียวหลัง import รวมถึงไฟล์ schema ที่ใช้ร่วมกัน (เช่น `lessons/020-json-and-zod/search-filter.ts`) · ถ้าลืม ข้อความจะเป็นภาษาอังกฤษและไม่ตรงกับ "ผลที่ควรเห็น"
 - `.optional()` แปลว่า "ไม่ส่ง field นี้มา" ไม่ได้แปลว่า "ส่ง `null` มา" บท 020 สอนเรื่องนี้ตรงๆ ว่า `null` ไม่ผ่าน zod
-- **placeholder ของ schema ในแบบฝึกหัด:** ใช้ `z.custom<T>()` ที่ยอมทุกค่า หรือ schema ที่หลวมกว่า แล้วมี guard ที่ `safeParse` ตัวอย่างที่ถูกต้องแล้ว **ต้องไม่ผ่าน** จึงหยุดก่อนเรียกโมเดล (ดู `buildSchema` ของบท 020 exercise-1, `productIdField` / `cartSchema` ของบท 021, `describeFailure` / `classifyWithRetry` ของบท 022) · ถ้า placeholder ผ่านตัวอย่างที่ถูกต้อง guard จะไม่ทำงานและผู้เรียนใช้ค่าผิดโดยไม่รู้ตัว
+- **placeholder ของ schema ในแบบฝึกหัด:** ใช้ `z.custom<T>()` ที่ยอมทุกค่า หรือ schema ที่หลวมกว่า แล้วมี guard ที่ `safeParse` ตัวอย่างที่ **schema ที่ถูกต้องต้องไม่ผ่าน** (เช่น `orderId: "1002"`, `P999`, `quantity: 0`) แล้วหยุด (`👉`) เมื่อ placeholder ยอมตัวอย่างนั้น (ดู `buildSchema` ของบท 020 exercise-1, `productIdField` / `cartSchema` ของบท 021, `describeFailure` / `classifyWithRetry` ของบท 022)
 
 ### structured output
 
